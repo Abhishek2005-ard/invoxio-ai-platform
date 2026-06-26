@@ -28,7 +28,7 @@ async def vector_search_tool(
     Search vector database (Pinecone) using Gemini embeddings.
     Always scopes results by tenant_id using Pinecone metadata filters.
     """
-    print(f"  🔍 [vector_search_tool] namespace={namespace} | query='{query[:50]}' | tenant={tenant_id}")
+    print(f"  [vector_search_tool] namespace={namespace} | query='{query[:50]}' | tenant={tenant_id}")
 
     # TODO: Replace with Pinecone client + Gemini embeddings:
     # from langchain_google_genai import GoogleGenerativeAIEmbeddings
@@ -39,7 +39,7 @@ async def vector_search_tool(
     # vec = await embed.aembed_query(query)
     # results = index.query(vector=vec, filter={"tenant_id": tenant_id}, namespace=namespace, top_k=top_k)
 
-    # ── Stub response ─────────────────────────────────────────────────────
+    # Stub response
     stub_matches = [
         {
             "id": "doc-103",

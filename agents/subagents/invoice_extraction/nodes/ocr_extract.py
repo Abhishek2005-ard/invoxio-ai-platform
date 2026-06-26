@@ -32,29 +32,29 @@ async def ocr_extract_node(state: InvoiceExtractionState) -> dict:
     pages     = state.get("pages", [])
     doc_meta  = state.get("doc_meta", {})
 
-    print(f"\n🔍 [ocr_extract] Selecting OCR strategy...")
+    print(f"\n[ocr_extract] Selecting OCR strategy...")
 
-    # ── Strategy A: PDF with a good text layer ───────────────────────────
+    # Strategy A: PDF with a good text layer
     if file_type == "pdf" and doc_meta.get("has_text_layer", False):
         avg_chars = doc_meta.get("total_text_chars", 0) / max(len(pages), 1)
         if avg_chars >= MIN_TEXT_CHARS_PER_PAGE:
             raw_text = "\n\n--- PAGE BREAK ---\n\n".join(pages).strip()
-            print(f"✅ [ocr_extract] Strategy A: PyMuPDF text ({len(raw_text)} chars)")
+            print(f"[ocr_extract] Strategy A: PyMuPDF text ({len(raw_text)} chars)")
             return {
                 "raw_text":         raw_text,
                 "ocr_method":       "pymupdf",
                 "ocr_confidence":   0.90,
             }
 
-    # ── Strategy B/C: Gemini Vision ──────────────────────────────────────
-    print(f"📸 [ocr_extract] Strategy B/C: Gemini Vision OCR")
+    # Strategy B/C: Gemini Vision
+    print(f"[ocr_extract] Strategy B/C: Gemini Vision OCR")
     raw_text, confidence = await _gemini_vision_ocr(
         page_images=state.get("page_images", []),
         file_type=file_type,
     )
 
     method = "gemini_vision" if file_type == "image" else "gemini_vision_pdf"
-    print(f"✅ [ocr_extract] Gemini Vision extracted {len(raw_text)} chars")
+    print(f"[ocr_extract] Gemini Vision extracted {len(raw_text)} chars")
 
     return {
         "raw_text":       raw_text,
@@ -101,9 +101,9 @@ async def _gemini_vision_ocr(page_images: list, file_type: str) -> tuple[str, fl
             ])
             page_text = response.text.strip() if response.text else ""
             all_pages_text.append(f"--- PAGE {i+1} ---\n{page_text}")
-            print(f"  📄 Page {i+1}: {len(page_text)} chars extracted")
+            print(f"  Page {i+1}: {len(page_text)} chars extracted")
         except Exception as e:
-            print(f"  ⚠️  Page {i+1} OCR failed: {e}")
+            print(f"  Warning: Page {i+1} OCR failed: {e}")
             all_pages_text.append(f"--- PAGE {i+1} ---\n[OCR FAILED: {e}]")
 
     raw_text    = "\n\n".join(all_pages_text)

@@ -24,7 +24,7 @@ async def code_run_tool(code: str, timeout: int = 5, tenant_id: str = "") -> Dic
     Execute arbitrary Python code in a sandboxed execution context.
     Captures stdout, stderr, and variables. Useful for data cleanups.
     """
-    print(f"  🐍 [code_run_tool] Executing {len(code)} chars of code...")
+    print(f"  [code_run_tool] Executing {len(code)} chars of code...")
 
     # Redirect stdout and stderr
     old_stdout = sys.stdout
@@ -72,7 +72,7 @@ async def code_run_tool(code: str, timeout: int = 5, tenant_id: str = "") -> Dic
     }
 
     if stderr_val:
-        print(f"  ❌ [code_run_tool] Failed: {stderr_val.splitlines()[-1]}")
+        print(f"  Error: [code_run_tool] Failed: {stderr_val.splitlines()[-1]}")
         return {
             "status": "error",
             "stdout": stdout_val,
@@ -80,7 +80,7 @@ async def code_run_tool(code: str, timeout: int = 5, tenant_id: str = "") -> Dic
             "locals": clean_locals,
         }
 
-    print(f"  ✅ [code_run_tool] Executed successfully")
+    print(f"  [code_run_tool] Executed successfully")
     return {
         "status": "success",
         "stdout": stdout_val,

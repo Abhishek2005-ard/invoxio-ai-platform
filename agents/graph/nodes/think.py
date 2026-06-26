@@ -17,10 +17,8 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from config.gemini import llm_think
 from graph.state import OrchestratorState
 
-# ─────────────────────────────────────────────────────────────────────────────
 #  System prompt for the THINK node.
 #  Instructs Gemini to reason step-by-step and output structured JSON.
-# ─────────────────────────────────────────────────────────────────────────────
 THINK_SYSTEM_PROMPT = """You are the Master Orchestrator for Invoxio, an AI-powered business intelligence platform.
 
 Your job in this THINK step is to:
@@ -63,9 +61,9 @@ async def think_node(state: OrchestratorState) -> dict:
     Reads:  messages, observations, iteration
     Writes: plan, steps, current_step_index, tool_name, tool_input
     """
-    print(f"\n🤔 [THINK] Iteration {state['iteration'] + 1} — Planning next action...")
+    print(f"\n[THINK] Iteration {state['iteration'] + 1} — Planning next action...")
 
-    # ── Build context from previous observations ──────────────────────────
+    # Build context from previous observations
     observation_context = ""
     if state.get("observations"):
         obs_list = "\n".join(
@@ -74,14 +72,14 @@ async def think_node(state: OrchestratorState) -> dict:
         )
         observation_context = f"\n\nPrevious Observations:\n{obs_list}"
 
-    # ── Get user's original request ───────────────────────────────────────
+    # Get user's original request
     user_message = ""
     for msg in reversed(state["messages"]):
         if isinstance(msg, HumanMessage):
             user_message = msg.content if isinstance(msg.content, str) else str(msg.content)
             break
 
-    # ── Invoke Gemini to produce a plan ───────────────────────────────────
+    # Invoke Gemini to produce a plan
     prompt_content = f"User Request: {user_message}{observation_context}"
 
     response = await llm_think.ainvoke([
@@ -91,13 +89,13 @@ async def think_node(state: OrchestratorState) -> dict:
 
     raw = response.content if isinstance(response.content, str) else str(response.content)
 
-    # ── Parse the JSON plan ───────────────────────────────────────────────
+    # Parse the JSON plan
     try:
         # Strip markdown code fences if Gemini wraps the JSON
         cleaned = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
         plan_data = json.loads(cleaned)
     except json.JSONDecodeError:
-        print(f"⚠️  [THINK] JSON parse failed — using fallback plan")
+        print(f"Warning: [THINK] JSON parse failed — using fallback plan")
         plan_data = {
             "plan": "Answer the user's question directly",
             "steps": ["Provide a general response"],
@@ -106,8 +104,8 @@ async def think_node(state: OrchestratorState) -> dict:
             "reasoning": "Fallback due to parse error",
         }
 
-    print(f"📋 [THINK] Plan: {plan_data.get('plan', '')}")
-    print(f"🔧 [THINK] Next tool: {plan_data.get('next_tool', '')} — Input: {plan_data.get('next_tool_input', {})}")
+    print(f"[THINK] Plan: {plan_data.get('plan', '')}")
+    print(f"[THINK] Next tool: {plan_data.get('next_tool', '')} — Input: {plan_data.get('next_tool_input', {})}")
 
     return {
         "plan": plan_data.get("plan", ""),

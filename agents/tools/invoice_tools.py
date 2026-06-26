@@ -33,7 +33,7 @@ async def query_invoices(
     Returns:
         Dict with invoices list and summary stats
     """
-    print(f"  🔍 [invoice_tools.query_invoices] tenant={tenant_id}, status={status}, client={client_name}")
+    print(f"  [invoice_tools.query_invoices] tenant={tenant_id}, status={status}, client={client_name}")
 
     from config.database import get_db
     db = await get_db()
@@ -102,7 +102,7 @@ async def get_invoice_detail(
         tenant_id:  Scopes to tenant
         invoice_id: The invoice ID to retrieve
     """
-    print(f"  📄 [invoice_tools.get_invoice_detail] id={invoice_id}")
+    print(f"  [invoice_tools.get_invoice_detail] id={invoice_id}")
 
     from config.database import get_db
     db = await get_db()

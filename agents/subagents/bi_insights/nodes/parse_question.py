@@ -26,7 +26,7 @@ Output ONLY valid JSON:
 """
 
 async def parse_question_node(state: BIInsightsState) -> dict:
-    print(f"\n🔍 [parse_question] Parsing: '{state['question']}'")
+    print(f"\n[parse_question] Parsing: '{state['question']}'")
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     response = await llm_think.ainvoke([
         SystemMessage(content=PARSE_PROMPT.format(today=today)),
@@ -38,7 +38,7 @@ async def parse_question_node(state: BIInsightsState) -> dict:
         data = json.loads(cleaned)
     except Exception:
         data = {"query_intent":"revenue_trend","time_period":{"from":"2024-01-01","to":"2024-12-31","label":"2024"},"dimensions":["month"],"metrics":["total_amount"],"chart_type":"line"}
-    print(f"  ✅ Intent: {data.get('query_intent')} | Period: {data.get('time_period',{}).get('label')} | Chart: {data.get('chart_type')}")
+    print(f"  Intent: {data.get('query_intent')} | Period: {data.get('time_period',{}).get('label')} | Chart: {data.get('chart_type')}")
     return {
         "query_intent":  data.get("query_intent","revenue_trend"),
         "time_period":   data.get("time_period",{}),

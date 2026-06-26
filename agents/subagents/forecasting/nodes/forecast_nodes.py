@@ -17,7 +17,7 @@ async def load_historical_node(state: ForecastingState) -> dict:
     Currently uses stub data if database records are insufficient.
     """
     metric = state.get("metric","revenue")
-    print(f"\n📂 [load_historical] Loading historical {metric} data for tenant={state['tenant_id']}...")
+    print(f"\n[load_historical] Loading historical {metric} data for tenant={state['tenant_id']}...")
 
     from config.database import get_db
     db = await get_db()
@@ -46,10 +46,10 @@ async def load_historical_node(state: ForecastingState) -> dict:
                 else:
                     data = db_results
         except Exception as e:
-            print(f"  ❌ DB Query failed for forecasting: {e}")
+            print(f"  Error: DB Query failed for forecasting: {e}")
 
     if not data:
-        print("  ℹ️  Using stub data for forecasting")
+        print("  Info: Using stub data for forecasting")
         # Stub: 12 months of realistic revenue data
         STUB_REVENUE = [
             {"date":"2023-07","value":38000},{"date":"2023-08","value":41000},
@@ -62,7 +62,7 @@ async def load_historical_node(state: ForecastingState) -> dict:
         STUB_CASH_FLOW = [{"date":d["date"],"value":int(d["value"]*0.72)} for d in STUB_REVENUE]
         data = STUB_CASH_FLOW if metric == "cash_flow" else STUB_REVENUE
 
-    print(f"  ✅ Loaded {len(data)} data points spanning {len(data)} months")
+    print(f"  Loaded {len(data)} data points spanning {len(data)} months")
     return {"historical_data": data, "data_points": len(data), "coverage_months": len(data)}
 
 
@@ -72,7 +72,7 @@ async def compute_forecast_node(state: ForecastingState) -> dict:
     """
     data         = state.get("historical_data", [])
     forecast_days = state.get("forecast_days", 30)
-    print(f"\n📈 [compute_forecast] Running linear regression over {len(data)} points, forecasting {forecast_days} days...")
+    print(f"\n[compute_forecast] Running linear regression over {len(data)} points, forecasting {forecast_days} days...")
 
     if len(data) < 3:
         return {"forecast_values":[],"model_stats":{},"trend_direction":"stable","growth_rate":0.0}
@@ -130,10 +130,10 @@ async def compute_forecast_node(state: ForecastingState) -> dict:
     model_stats = {"r_squared": round(r_squared, 4), "slope": round(slope, 2),
                    "intercept": round(intercept, 2), "rmse": round(rmse, 2)}
 
-    print(f"  ✅ R²={r_squared:.3f} | slope={slope:.0f}/month | trend={trend_direction} | "
+    print(f"  R²={r_squared:.3f} | slope={slope:.0f}/month | trend={trend_direction} | "
           f"growth={growth_rate:+.1f}%/month")
     for fv in forecast_values:
-        print(f"  🔮 {fv['date']}: ${fv['predicted']:,.0f} [{fv['lower_bound']:,.0f}–{fv['upper_bound']:,.0f}]")
+        print(f"  {fv['date']}: ${fv['predicted']:,.0f} [{fv['lower_bound']:,.0f}–{fv['upper_bound']:,.0f}]")
 
     return {
         "forecast_values": forecast_values,
@@ -151,7 +151,7 @@ async def detect_seasonality_node(state: ForecastingState) -> dict:
     including the best and worst performing months.
     """
     data = state.get("historical_data", [])
-    print(f"\n🌊 [detect_seasonality] Analyzing seasonal patterns...")
+    print(f"\n[detect_seasonality] Analyzing seasonal patterns...")
 
     if len(data) < 6:
         return {"seasonality_found":False,"seasonal_patterns":[],"best_month":"N/A","worst_month":"N/A"}
@@ -182,7 +182,7 @@ async def detect_seasonality_node(state: ForecastingState) -> dict:
     best  = patterns[-1]["month"] if patterns else "N/A"
     found = any(p["factor"] > 1.15 or p["factor"] < 0.85 for p in patterns)
 
-    print(f"  ✅ Seasonality detected: {found} | Best: {best} | Worst: {worst}")
+    print(f"  Seasonality detected: {found} | Best: {best} | Worst: {worst}")
     return {"seasonality_found":found,"seasonal_patterns":patterns,"best_month":best,"worst_month":worst}
 
 
@@ -207,7 +207,7 @@ async def generate_insights_node(state: ForecastingState) -> dict:
     Uses the LLM to generate a plain-English narrative, risk factors, 
     and opportunities based on the computed forecast and seasonality.
     """
-    print(f"\n🧠 [generate_insights] Generating AI insights...")
+    print(f"\n[generate_insights] Generating AI insights...")
 
     context = {
         "metric":         state.get("metric"),
@@ -233,7 +233,7 @@ async def generate_insights_node(state: ForecastingState) -> dict:
         risks        = parsed.get("risk_factors",["Market conditions may change."])
         opportunities= parsed.get("opportunities",["Focus on top clients."])
     except Exception as e:
-        print(f"  ⚠️  Insight generation error: {e}")
+        print(f"  Warning: Insight generation error: {e}")
         narrative    = f"Revenue shows a {state.get('trend_direction','stable')} trend with {state.get('growth_rate',0):+.1f}%/month growth."
         risks        = ["Market uncertainty","Client churn","Seasonal slowdown"]
         opportunities= ["Upsell top clients","Accelerate collections","Enter new market"]
@@ -254,5 +254,5 @@ async def generate_insights_node(state: ForecastingState) -> dict:
         "opportunities":    opportunities,
     }
 
-    print(f"  ✅ Insights complete | Trend: {state.get('trend_direction')} | Growth: {state.get('growth_rate'):+.1f}%/month")
+    print(f"  Insights complete | Trend: {state.get('trend_direction')} | Growth: {state.get('growth_rate'):+.1f}%/month")
     return {"forecast_narrative":narrative,"risk_factors":risks,"opportunities":opportunities,"final_forecast":final_forecast}

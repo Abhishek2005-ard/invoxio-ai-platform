@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 
 async def get_revenue_trends(tenant_id: str, period: str = "monthly", year: int = 2024, **kwargs) -> Dict[str, Any]:
     """Revenue trends over time — monthly/quarterly/annual breakdown."""
-    print(f"  📈 [analytics_tools.get_revenue_trends] period={period}")
+    print(f"  [analytics_tools.get_revenue_trends] period={period}")
     # TODO: Replace with MongoDB aggregation pipeline
     return {
         "status": "success",
@@ -25,7 +25,7 @@ async def get_revenue_trends(tenant_id: str, period: str = "monthly", year: int 
 
 async def get_cash_flow(tenant_id: str, date_from: Optional[str] = None, date_to: Optional[str] = None, **kwargs) -> Dict[str, Any]:
     """Net cash flow report — paid invoices minus pending expenses."""
-    print(f"  💰 [analytics_tools.get_cash_flow]")
+    print(f"  [analytics_tools.get_cash_flow]")
     # TODO: Real aggregation
     return {
         "status": "success",
@@ -38,7 +38,7 @@ async def get_cash_flow(tenant_id: str, date_from: Optional[str] = None, date_to
 
 async def get_top_clients(tenant_id: str, limit: int = 5, **kwargs) -> Dict[str, Any]:
     """Returns top clients ranked by total revenue."""
-    print(f"  🏆 [analytics_tools.get_top_clients] limit={limit}")
+    print(f"  [analytics_tools.get_top_clients] limit={limit}")
     # TODO: Real aggregation
     return {
         "status": "success",
@@ -52,7 +52,7 @@ async def get_top_clients(tenant_id: str, limit: int = 5, **kwargs) -> Dict[str,
 
 async def forecast_revenue(tenant_id: str, days: int = 30, **kwargs) -> Dict[str, Any]:
     """Linear regression forecast for the next N days."""
-    print(f"  🔮 [analytics_tools.forecast_revenue] days={days}")
+    print(f"  [analytics_tools.forecast_revenue] days={days}")
     # TODO: Real ML model / regression
     return {
         "status": "success",
@@ -66,7 +66,7 @@ async def forecast_revenue(tenant_id: str, days: int = 30, **kwargs) -> Dict[str
 
 async def get_overdue_report(tenant_id: str, **kwargs) -> Dict[str, Any]:
     """Aging report of all overdue invoices."""
-    print(f"  ⚠️  [analytics_tools.get_overdue_report]")
+    print(f"  Warning: [analytics_tools.get_overdue_report]")
     # TODO: Real query
     return {
         "status": "success",

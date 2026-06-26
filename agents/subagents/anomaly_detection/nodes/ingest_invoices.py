@@ -26,14 +26,14 @@ async def ingest_invoices_node(state: AnomalyDetectionState) -> dict:
     raw = state.get("input_invoices", [])
     tenant_id = state["tenant_id"]
 
-    print(f"\n📥 [ingest_invoices] Processing {len(raw)} invoices for tenant: {tenant_id}")
+    print(f"\n[ingest_invoices] Processing {len(raw)} invoices for tenant: {tenant_id}")
 
     if not raw:
-        # ── Stub: load sample invoices when none are passed ───────────────
-        print("  ℹ️  No invoices provided — using sample dataset")
+        # Stub: load sample invoices when none are passed
+        print("  Info: No invoices provided — using sample dataset")
         raw = _get_sample_invoices(tenant_id)
 
-    # ── Normalize each invoice ────────────────────────────────────────────
+    # Normalize each invoice
     invoices: List[Dict[str, Any]] = []
     for inv in raw:
         normalized = {
@@ -53,7 +53,7 @@ async def ingest_invoices_node(state: AnomalyDetectionState) -> dict:
         }
         invoices.append(normalized)
 
-    # ── Compute amount statistics ─────────────────────────────────────────
+    # Compute amount statistics
     amounts = [inv["amount"] for inv in invoices if inv["amount"] > 0]
     if len(amounts) >= 2:
         mean   = statistics.mean(amounts)
@@ -76,7 +76,7 @@ async def ingest_invoices_node(state: AnomalyDetectionState) -> dict:
         "q3":     round(_percentile(sorted(amounts), 75), 2),
     }
 
-    print(f"✅ [ingest_invoices] {len(invoices)} normalized | "
+    print(f"[ingest_invoices] {len(invoices)} normalized | "
           f"Amounts — mean: {amount_stats['mean']}, std: {amount_stats['std']}, "
           f"range: [{amount_stats['min']}, {amount_stats['max']}]")
 
@@ -87,7 +87,7 @@ async def ingest_invoices_node(state: AnomalyDetectionState) -> dict:
     }
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# Helpers
 
 def _to_float(v) -> float:
     """Safely converts any value to float."""

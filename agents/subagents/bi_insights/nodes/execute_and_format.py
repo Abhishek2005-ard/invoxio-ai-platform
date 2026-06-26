@@ -7,24 +7,24 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from config.gemini import llm_think
 from subagents.bi_insights.state import BIInsightsState
 
-# ── Node 3: execute_query ─────────────────────────────────────────────────────
+# Node 3: execute_query
 async def execute_query_node(state: BIInsightsState) -> dict:
     """Runs the MongoDB aggregation pipeline. Returns stub data until DB is connected."""
-    print(f"\n⚙️  [execute_query] Running {len(state.get('mongo_pipeline',[]))} pipeline stages...")
+    print(f"\n[execute_query] Running {len(state.get('mongo_pipeline',[]))} pipeline stages...")
     from config.database import get_db
     db = await get_db()
     
     if db is not None and "mongo_pipeline" in state and state["mongo_pipeline"]:
         try:
             results = await db.invoices.aggregate(state["mongo_pipeline"]).to_list(length=100)
-            print(f"  ✅ DB Query returned {len(results)} records")
+            print(f"  DB Query returned {len(results)} records")
             return {"raw_results": results, "result_count": len(results)}
         except Exception as e:
-            print(f"  ❌ DB Query failed: {e}")
+            print(f"  Error: DB Query failed: {e}")
             # Fall back to stub below
             pass
 
-    # ── Stub data mapped by intent ────────────────────────────────────────
+    # Stub data mapped by intent
     STUB = {
         "revenue_trend": [
             {"month":"2024-01","total_revenue":42000,"count":8},{"month":"2024-02","total_revenue":51000,"count":10},
@@ -51,14 +51,14 @@ async def execute_query_node(state: BIInsightsState) -> dict:
     }
     intent  = state.get("query_intent","revenue_trend")
     results = STUB.get(intent, STUB["revenue_trend"])
-    print(f"  ✅ Stub Query returned {len(results)} records")
+    print(f"  Stub Query returned {len(results)} records")
     return {"raw_results": results, "result_count": len(results)}
 
 
-# ── Node 4: generate_chart_data ───────────────────────────────────────────────
+# Node 4: generate_chart_data
 async def generate_chart_data_node(state: BIInsightsState) -> dict:
     """Transforms raw query results into Recharts-compatible chart data + KPI cards."""
-    print(f"\n📊 [generate_chart_data] Formatting {state.get('result_count',0)} records as {state.get('chart_type','bar')} chart...")
+    print(f"\n[generate_chart_data] Formatting {state.get('result_count',0)} records as {state.get('chart_type','bar')} chart...")
     results    = state.get("raw_results", [])
     intent     = state.get("query_intent", "revenue_trend")
     chart_type = state.get("chart_type", "bar")
@@ -66,7 +66,7 @@ async def generate_chart_data_node(state: BIInsightsState) -> dict:
     # Recharts data array — each item is one data point
     chart_data = {"type": chart_type, "data": results, "intent": intent}
 
-    # ── KPI cards for the dashboard header ───────────────────────────────
+    # KPI cards for the dashboard header
     kpi_cards = []
     if intent == "revenue_trend":
         total = sum(r.get("total_revenue", 0) for r in results)
@@ -93,11 +93,11 @@ async def generate_chart_data_node(state: BIInsightsState) -> dict:
             {"label":"Outstanding","value":f"${total_unpaid:,.0f}","trend":"down"},
         ]
 
-    print(f"  ✅ Chart data ready | {len(kpi_cards)} KPI cards")
+    print(f"  Chart data ready | {len(kpi_cards)} KPI cards")
     return {"chart_data": chart_data, "kpi_cards": kpi_cards}
 
 
-# ── Node 5: compose_response ──────────────────────────────────────────────────
+# Node 5: compose_response
 NARRATE_PROMPT = """You are a business analyst providing insights from financial data.
 
 Write a concise 2-3 sentence plain-English answer to the user's question based on the data.
@@ -106,7 +106,7 @@ Highlight the most important number, trend, or insight. Be specific — include 
 
 async def compose_response_node(state: BIInsightsState) -> dict:
     """Gemini writes a plain-English narrative + assembles the final response."""
-    print(f"\n✍️  [compose_response] Writing narrative...")
+    print(f"\n[compose_response] Writing narrative...")
     question   = state.get("question","")
     results    = state.get("raw_results",[])
     period     = state.get("time_period",{})
@@ -129,5 +129,5 @@ async def compose_response_node(state: BIInsightsState) -> dict:
         "time_period":   period,
         "record_count":  state.get("result_count", 0),
     }
-    print(f"  ✅ Response ready")
+    print(f"  Response ready")
     return {"narrative": narrative, "final_response": final_response}

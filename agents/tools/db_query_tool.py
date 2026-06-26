@@ -25,9 +25,9 @@ async def db_query_tool(tenant_id: str, collection: str, pipeline: List[Dict], l
     Always injects a $match on tenant_id as the first stage for security.
     Returns the result list and metadata.
     """
-    print(f"  🗄️  [db_query_tool] collection={collection} | tenant={tenant_id} | stages={len(pipeline)}")
+    print(f"  [db_query_tool] collection={collection} | tenant={tenant_id} | stages={len(pipeline)}")
 
-    # ── Security: force tenant_id filter as first stage ───────────────────
+    # Security: force tenant_id filter as first stage
     tenant_match = {"$match": {"tenant_id": tenant_id}}
     if not pipeline or pipeline[0].get("$match", {}).get("tenant_id") != tenant_id:
         pipeline = [tenant_match] + pipeline
@@ -57,7 +57,7 @@ async def db_query_tool(tenant_id: str, collection: str, pipeline: List[Dict], l
                 "error": str(e)
             }
 
-    # ── Stub response fallback ────────────────────────────────────────────
+    # Stub response fallback
     stub_results = [
         {"_id": "INV-001", "total_amount": 5000, "status": "paid",   "vendor": {"name": "Acme Corp"}},
         {"_id": "INV-002", "total_amount": 12000,"status": "unpaid", "vendor": {"name": "Beta Ltd"}},

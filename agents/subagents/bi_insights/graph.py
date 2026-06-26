@@ -23,7 +23,7 @@ def build_bi_graph():
     g.add_edge("generate_chart_data","compose_response")
     g.add_edge("compose_response",    END)
     compiled = g.compile()
-    print("✅ BI Insights graph compiled")
+    print("BI Insights graph compiled")
     return compiled
 
 bi_graph = build_bi_graph()

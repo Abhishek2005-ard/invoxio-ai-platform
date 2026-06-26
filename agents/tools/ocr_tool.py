@@ -35,9 +35,9 @@ async def ocr_tool(
     Extract text from a PDF or image using the best available OCR engine.
     Supports Tesseract (local), AWS Textract (cloud), Gemini Vision (AI), and PyMuPDF.
     """
-    print(f"  📸 [ocr_tool] engine={engine} | type={file_type} | tenant={tenant_id}")
+    print(f"  [ocr_tool] engine={engine} | type={file_type} | tenant={tenant_id}")
 
-    # ── Load file bytes ───────────────────────────────────────────────────
+    # Load file bytes
     file_bytes = None
     if file_path and os.path.exists(file_path):
         with open(file_path, "rb") as f:
@@ -48,13 +48,13 @@ async def ocr_tool(
     if not file_bytes:
         return {"status": "error", "error": "No file provided — supply file_path or base64_data"}
 
-    # ── Auto-select best engine ───────────────────────────────────────────
+    # Auto-select best engine
     if engine == "auto":
         engine = _select_engine(file_type, len(file_bytes))
 
-    print(f"  🔧 [ocr_tool] Selected engine: {engine}")
+    print(f"  [ocr_tool] Selected engine: {engine}")
 
-    # ── Execute OCR ───────────────────────────────────────────────────────
+    # Execute OCR
     if engine == "pymupdf":
         return await _pymupdf_ocr(file_bytes)
     elif engine == "tesseract":

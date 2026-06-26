@@ -15,10 +15,8 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from config.gemini import llm_think
 from subagents.invoice_extraction.state import InvoiceExtractionState
 
-# ─────────────────────────────────────────────────────────────────────────────
 #  The most important prompt in the pipeline.
 #  Instructs Gemini to extract every invoice field into a precise JSON schema.
-# ─────────────────────────────────────────────────────────────────────────────
 PARSE_SYSTEM_PROMPT = """You are an expert invoice data extraction AI.
 
 Extract ALL information from the provided invoice text and return it as a single, valid JSON object.
@@ -85,7 +83,7 @@ async def parse_invoice_node(state: InvoiceExtractionState) -> dict:
     parse_attempts = state.get("parse_attempts", 0)
     ocr_method     = state.get("ocr_method", "unknown")
 
-    print(f"\n🧠 [parse_invoice] Attempt {parse_attempts + 1} — Parsing {len(raw_text)} chars of OCR text...")
+    print(f"\n[parse_invoice] Attempt {parse_attempts + 1} — Parsing {len(raw_text)} chars of OCR text...")
 
     if not raw_text.strip():
         return {
@@ -94,7 +92,7 @@ async def parse_invoice_node(state: InvoiceExtractionState) -> dict:
             "error":          "No text to parse — OCR returned empty content",
         }
 
-    # ── Build the prompt ──────────────────────────────────────────────────
+    # Build the prompt
     # On retry, add extra guidance to fix the previous failure
     retry_note = ""
     if parse_attempts > 0:
@@ -113,7 +111,7 @@ async def parse_invoice_node(state: InvoiceExtractionState) -> dict:
 
     raw_output = response.content if isinstance(response.content, str) else str(response.content)
 
-    # ── Parse the JSON ────────────────────────────────────────────────────
+    # Parse the JSON
     try:
         # Strip any accidental markdown code fences
         cleaned = (
@@ -124,7 +122,7 @@ async def parse_invoice_node(state: InvoiceExtractionState) -> dict:
             .strip()
         )
         parsed = json.loads(cleaned)
-        print(f"✅ [parse_invoice] Successfully parsed JSON — "
+        print(f"[parse_invoice] Successfully parsed JSON — "
               f"vendor: {parsed.get('vendor', {}).get('name', '?')}, "
               f"total: {parsed.get('total_amount', '?')}")
         return {
@@ -133,7 +131,7 @@ async def parse_invoice_node(state: InvoiceExtractionState) -> dict:
         }
 
     except json.JSONDecodeError as e:
-        print(f"❌ [parse_invoice] JSON parse error: {e}")
+        print(f"Error: [parse_invoice] JSON parse error: {e}")
         return {
             "parsed_json":    {"_raw_output": raw_output},
             "parse_attempts": parse_attempts + 1,

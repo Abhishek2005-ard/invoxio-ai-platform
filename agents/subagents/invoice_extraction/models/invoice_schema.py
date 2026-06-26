@@ -39,23 +39,23 @@ class InvoiceData(BaseModel):
     Fully structured invoice extracted from PDF/image.
     This is the final output of the Invoice Extraction Sub-Agent.
     """
-    # ── Identifiers ──────────────────────────────────────────────────────
+    # Identifiers
     invoice_number:  str
     purchase_order:  Optional[str] = None
 
-    # ── Parties ───────────────────────────────────────────────────────────
+    # Parties
     vendor:  VendorInfo
     client:  ClientInfo
 
-    # ── Dates ─────────────────────────────────────────────────────────────
+    # Dates
     invoice_date:  Optional[str] = None   # ISO format: "2024-03-15"
     due_date:      Optional[str] = None
     payment_terms: Optional[str] = None   # e.g. "Net 30"
 
-    # ── Line Items ────────────────────────────────────────────────────────
+    # Line Items
     line_items: List[LineItem] = Field(default_factory=list)
 
-    # ── Financials ────────────────────────────────────────────────────────
+    # Financials
     subtotal:      Optional[float] = 0.0
     tax_rate:      Optional[float] = 0.0  # As percentage, e.g. 18.0 for 18%
     tax_amount:    Optional[float] = 0.0
@@ -63,16 +63,16 @@ class InvoiceData(BaseModel):
     total_amount:  float
     currency:      str = "USD"
 
-    # ── Payment ───────────────────────────────────────────────────────────
+    # Payment
     payment_method:      Optional[str] = None  # "bank_transfer" | "card" | "upi"
     bank_account:        Optional[str] = None
     bank_ifsc:           Optional[str] = None
 
-    # ── Notes ─────────────────────────────────────────────────────────────
+    # Notes
     notes:     Optional[str] = None
     status:    str = "unpaid"   # "unpaid" | "paid" | "overdue"
 
-    # ── Extraction Metadata ───────────────────────────────────────────────
+    # Extraction Metadata
     ocr_method:        Optional[str] = None
     extraction_confidence: Optional[float] = None
     raw_text_preview:  Optional[str] = None  # First 200 chars of OCR text

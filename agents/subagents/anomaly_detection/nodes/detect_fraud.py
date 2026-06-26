@@ -62,7 +62,7 @@ async def detect_fraud_node(state: AnomalyDetectionState) -> dict:
     Writes: fraud_signals, fraud_count
     """
     invoices = state.get("invoices", [])
-    print(f"\n🕵️  [detect_fraud] Scanning {len(invoices)} invoices for fraud signals...")
+    print(f"\n[detect_fraud] Scanning {len(invoices)} invoices for fraud signals...")
 
     signals: List[Dict[str, Any]] = []
 
@@ -144,13 +144,13 @@ async def detect_fraud_node(state: AnomalyDetectionState) -> dict:
                 evidence=f"invoice_count={len(vendor_invs)}",
             ))
 
-    print(f"  📋 Rule-based: {len(signals)} signal(s) found")
+    print(f"  Rule-based: {len(signals)} signal(s) found")
 
     # Gemini AI deep analysis
     ai_signals = await _ai_fraud_analysis(invoices)
     signals.extend(ai_signals)
-    print(f"  🤖 AI analysis: {len(ai_signals)} additional signal(s) found")
-    print(f"✅ [detect_fraud] Total fraud signals: {len(signals)}")
+    print(f"  AI analysis: {len(ai_signals)} additional signal(s) found")
+    print(f"[detect_fraud] Total fraud signals: {len(signals)}")
 
     return {
         "fraud_signals": signals,
@@ -182,7 +182,7 @@ async def _ai_fraud_analysis(invoices: list) -> list:
         ai_results = json.loads(cleaned)
         return [s for s in ai_results if isinstance(s, dict) and "invoice_id" in s]
     except Exception as e:
-        print(f"  ⚠️  AI fraud analysis error: {e}")
+        print(f"  Warning: AI fraud analysis error: {e}")
         return []
 
 

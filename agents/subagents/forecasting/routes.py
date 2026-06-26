@@ -24,7 +24,7 @@ async def run_forecast(req: ForecastRequest):
       - seasonal_patterns: best/worst months
       - narrative + risk_factors + opportunities
     """
-    print(f"\n🔮 [POST /forecast/run] metric={req.metric} | days={req.forecast_days}")
+    print(f"\n[POST /forecast/run] metric={req.metric} | days={req.forecast_days}")
     initial = {
         "tenant_id":req.tenant_id,"forecast_days":req.forecast_days,"metric":req.metric,
         "historical_data":[],"data_points":0,"coverage_months":0,

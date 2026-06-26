@@ -17,7 +17,7 @@ def build_report_graph():
     g.add_edge("render_pdf",        "distribute")
     g.add_edge("distribute",        END)
     c = g.compile()
-    print("✅ Report Generation graph compiled")
+    print("Report Generation graph compiled")
     return c
 
 report_graph = build_report_graph()

@@ -23,36 +23,36 @@ class OrchestratorState(TypedDict):
     Flows through every node in the LangGraph StateGraph.
     """
 
-    # ── Conversation ──────────────────────────────────────────────────────
+    # Conversation
     # add_messages is a LangGraph reducer: APPENDS new messages instead of overwriting
     messages: Annotated[List[BaseMessage], add_messages]
 
-    # ── Identity & Tenancy ────────────────────────────────────────────────
+    # Identity & Tenancy
     tenant_id: str          # Scopes every DB call — prevents cross-tenant data leaks
     user_id: str            # Who is chatting
     session_id: str         # Unique chat session identifier
 
-    # ── THINK node outputs ────────────────────────────────────────────────
+    # THINK node outputs
     plan: str               # High-level plan produced by the THINK node
     steps: List[str]        # Ordered list of steps to execute
     current_step_index: int # Which step we're currently executing
 
-    # ── ACT node outputs ──────────────────────────────────────────────────
+    # ACT node outputs
     tool_name: str              # Name of the tool/sub-agent to call
     tool_input: Dict[str, Any]  # Arguments passed to the tool
 
-    # ── OBSERVE node outputs ──────────────────────────────────────────────
+    # OBSERVE node outputs
     # List of (step, result) tuples — one per ACT→OBSERVE cycle
     observations: List[Dict[str, Any]]
 
-    # ── REFLECT node outputs ──────────────────────────────────────────────
+    # REFLECT node outputs
     reflection: str         # Reasoning about whether the task is done
     is_complete: bool       # If True → END the loop, if False → loop back to THINK
     final_answer: str       # The synthesized response sent back to the user
 
-    # ── Loop Control ──────────────────────────────────────────────────────
+    # Loop Control
     iteration: int          # Current ReAct loop iteration count
     max_iterations: int     # Hard ceiling to prevent infinite loops
 
-    # ── Error Handling ────────────────────────────────────────────────────
+    # Error Handling
     error: Optional[str]    # Populated if any node fails

@@ -19,7 +19,7 @@ class ReportRequest(BaseModel):
 @router.post("/generate")
 async def generate_report(req: ReportRequest):
     """Generate a full business report as PDF and distribute via email/Slack."""
-    print(f"\n📊 [POST /report/generate] type={req.report_type} | period={req.period_label}")
+    print(f"\n[POST /report/generate] type={req.report_type} | period={req.period_label}")
     initial = {
         "tenant_id":req.tenant_id,"report_type":req.report_type,
         "period_label":req.period_label,"date_from":req.date_from,"date_to":req.date_to,

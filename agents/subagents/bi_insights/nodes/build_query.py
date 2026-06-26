@@ -60,7 +60,7 @@ async def build_query_node(state: BIInsightsState) -> dict:
     date_from = period.get("from", "2024-01-01")
     date_to   = period.get("to", "2024-12-31")
 
-    print(f"\n🔧 [build_query] Building query for intent: '{intent}'")
+    print(f"\n[build_query] Building query for intent: '{intent}'")
 
     # Use preset pipeline if available
     if intent in PRESET_PIPELINES:
@@ -71,7 +71,7 @@ async def build_query_node(state: BIInsightsState) -> dict:
             .replace("__TO__", date_to)
         )
         desc = f"Preset pipeline for {intent} from {date_from} to {date_to}"
-        print(f"  ⚡ Using preset pipeline ({len(pipeline)} stages)")
+        print(f"  Using preset pipeline ({len(pipeline)} stages)")
     else:
         # Fallback to Gemini for custom queries
         response = await llm_think.ainvoke([
@@ -85,6 +85,6 @@ async def build_query_node(state: BIInsightsState) -> dict:
         except Exception:
             pipeline = PRESET_PIPELINES["revenue_trend"]
         desc = f"Custom pipeline for {intent}"
-        print(f"  🤖 Gemini generated pipeline ({len(pipeline)} stages)")
+        print(f"  Gemini generated pipeline ({len(pipeline)} stages)")
 
     return {"mongo_pipeline": pipeline, "query_description": desc}

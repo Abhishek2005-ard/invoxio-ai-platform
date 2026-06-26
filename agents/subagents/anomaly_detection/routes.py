@@ -16,7 +16,7 @@ from subagents.anomaly_detection.graph import anomaly_graph
 router = APIRouter()
 
 
-# ── Request Models ────────────────────────────────────────────────────────────
+# Request Models
 
 class InvoiceScanRequest(BaseModel):
     """Scan a provided list of invoices for anomalies."""
@@ -27,7 +27,7 @@ class InvoiceScanRequest(BaseModel):
     )
 
 
-# ── POST /scan ────────────────────────────────────────────────────────────────
+# POST /scan
 
 @router.post("/scan")
 async def scan_invoices(request: InvoiceScanRequest):
@@ -43,7 +43,7 @@ async def scan_invoices(request: InvoiceScanRequest):
       - Outlier scores (Z-score + IQR)
       - AI narrative and recommendations
     """
-    print(f"\n🚨 [POST /anomaly/scan] tenant={request.tenant_id} | "
+    print(f"\n[POST /anomaly/scan] tenant={request.tenant_id} | "
           f"invoices={len(request.invoices)} (0 = use sample data)")
 
     initial_state = {
@@ -80,7 +80,7 @@ async def scan_invoices(request: InvoiceScanRequest):
     })
 
 
-# ── GET /health ───────────────────────────────────────────────────────────────
+# GET /health
 
 @router.get("/health")
 async def anomaly_health():

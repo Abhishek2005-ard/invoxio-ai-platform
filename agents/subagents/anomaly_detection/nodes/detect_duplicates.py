@@ -25,7 +25,7 @@ async def detect_duplicates_node(state: AnomalyDetectionState) -> dict:
     Writes: duplicates, duplicate_count
     """
     invoices = state.get("invoices", [])
-    print(f"\n🔍 [detect_duplicates] Scanning {len(invoices)} invoices for duplicates...")
+    print(f"\n[detect_duplicates] Scanning {len(invoices)} invoices for duplicates...")
 
     duplicates: List[Dict[str, Any]] = []
 
@@ -76,9 +76,9 @@ async def detect_duplicates_node(state: AnomalyDetectionState) -> dict:
                 note="Same vendor and amount on different dates — possible recurring charge, review needed",
             ))
 
-    print(f"✅ [detect_duplicates] Found {len(duplicates)} duplicate pair(s)")
+    print(f"[detect_duplicates] Found {len(duplicates)} duplicate pair(s)")
     for d in duplicates:
-        print(f"  ⚠️  [{d['match_type'].upper()}] {d['invoice_id_a']} ↔ {d['invoice_id_b']} "
+        print(f"  Warning: [{d['match_type'].upper()}] {d['invoice_id_a']} ↔ {d['invoice_id_b']} "
               f"| score: {d['match_score']} | risk: {d['risk_level']}")
 
     return {

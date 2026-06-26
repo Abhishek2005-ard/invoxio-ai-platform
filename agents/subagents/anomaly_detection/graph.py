@@ -52,14 +52,14 @@ def build_anomaly_graph():
     """
     graph = StateGraph(AnomalyDetectionState)
 
-    # ── Register all 5 nodes ──────────────────────────────────────────────
+    # Register all 5 nodes
     graph.add_node("ingest_invoices",   ingest_invoices_node)
     graph.add_node("detect_duplicates", detect_duplicates_node)
     graph.add_node("detect_fraud",      detect_fraud_node)
     graph.add_node("score_outliers",    score_outliers_node)
     graph.add_node("generate_report",   generate_report_node)
 
-    # ── Linear pipeline edges ─────────────────────────────────────────────
+    # Linear pipeline edges
     graph.add_edge(START,                "ingest_invoices")
     graph.add_edge("ingest_invoices",    "detect_duplicates")
     graph.add_edge("detect_duplicates",  "detect_fraud")
@@ -68,9 +68,9 @@ def build_anomaly_graph():
     graph.add_edge("generate_report",    END)
 
     compiled = graph.compile()
-    print("✅ Anomaly Detection Sub-Agent graph compiled")
+    print("Anomaly Detection Sub-Agent graph compiled")
     return compiled
 
 
-# ── Singleton ─────────────────────────────────────────────────────────────────
+# Singleton
 anomaly_graph = build_anomaly_graph()

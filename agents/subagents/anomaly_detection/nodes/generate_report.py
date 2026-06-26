@@ -56,9 +56,9 @@ async def generate_report_node(state: AnomalyDetectionState) -> dict:
     fraud_signals  = state.get("fraud_signals", [])
     outlier_scores = state.get("outlier_scores", [])
 
-    print(f"\n📋 [generate_report] Compiling final anomaly report...")
+    print(f"\n[generate_report] Compiling final anomaly report...")
 
-    # ── Compute summary stats ─────────────────────────────────────────────
+    # Compute summary stats
     critical_count = sum(
         1 for s in fraud_signals if s.get("risk_level") == "critical"
     ) + sum(
@@ -90,18 +90,18 @@ async def generate_report_node(state: AnomalyDetectionState) -> dict:
         "total_amount_at_risk":    round(total_at_risk, 2),
     }
 
-    print(f"  📊 Summary: {json.dumps(summary)}")
+    print(f"  Summary: {json.dumps(summary)}")
 
-    # ── Build context for Gemini ──────────────────────────────────────────
+    # Build context for Gemini
     context = _build_context(summary, duplicates, fraud_signals, outlier_invoices)
 
-    # ── Gemini: plain-English narrative ───────────────────────────────────
+    # Gemini: plain-English narrative
     narrative = await _get_narrative(context)
 
-    # ── Gemini: ranked recommendations ───────────────────────────────────
+    # Gemini: ranked recommendations
     recommendations = await _get_recommendations(context)
 
-    print(f"✅ [generate_report] Report complete — "
+    print(f"[generate_report] Report complete — "
           f"{critical_count} critical alerts | "
           f"${total_at_risk:,.2f} at risk")
 
@@ -132,7 +132,7 @@ async def _get_narrative(context: str) -> str:
         ])
         return response.content if isinstance(response.content, str) else "Narrative generation failed."
     except Exception as e:
-        print(f"  ⚠️  Narrative generation error: {e}")
+        print(f"  Warning: Narrative generation error: {e}")
         return "Automated narrative unavailable — review raw findings below."
 
 
@@ -148,7 +148,7 @@ async def _get_recommendations(context: str) -> List[str]:
         result = json.loads(cleaned)
         return result if isinstance(result, list) else []
     except Exception as e:
-        print(f"  ⚠️  Recommendations error: {e}")
+        print(f"  Warning: Recommendations error: {e}")
         return ["Review flagged invoices manually.", "Contact vendors with multiple duplicate submissions."]
 
 

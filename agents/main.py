@@ -20,7 +20,7 @@ from subagents.bi_insights.routes import router as bi_router
 from subagents.report_generation.routes import router as report_router
 from subagents.forecasting.routes import router as forecast_router
 
-# ── FastAPI App ───────────────────────────────────────────────────────────────
+# FastAPI App
 app = FastAPI(
     title="Invoxio AI Agent",
     description=(
@@ -33,7 +33,7 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# ── CORS (allow React frontend at localhost:5173 or :3000) ────────────────────
+# CORS (allow React frontend at localhost:5173 or :3000)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://localhost:3000"],
@@ -42,7 +42,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Routes ────────────────────────────────────────────────────────────────────
+# Routes
 app.include_router(agent_router,   prefix="/api/agent",    tags=["Master Orchestrator"])
 app.include_router(invoice_router, prefix="/api/invoice",  tags=["Invoice Extraction"])
 app.include_router(anomaly_router, prefix="/api/anomaly",  tags=["Anomaly Detection"])
@@ -70,11 +70,11 @@ async def health():
     return {"status": "healthy"}
 
 
-# ── Startup Event ─────────────────────────────────────────────────────────────
+# Startup Event
 @app.on_event("startup")
 async def on_startup():
     print("\n" + "="*55)
-    print("  🚀 Invoxio AI Agent")
+    print("  Invoxio AI Agent")
     print(f"  Model:      {settings.gemini_model}")
     print(f"  Max iters:  {settings.agent_max_iterations}")
     print(f"  Env:        {settings.app_env}")
@@ -82,7 +82,7 @@ async def on_startup():
     print("="*55 + "\n")
 
 
-# ── Entry Point ───────────────────────────────────────────────────────────────
+# Entry Point
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",

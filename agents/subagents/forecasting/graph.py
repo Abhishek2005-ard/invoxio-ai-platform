@@ -18,7 +18,7 @@ def build_forecast_graph():
     g.add_edge("detect_seasonality", "generate_insights")
     g.add_edge("generate_insights",   END)
     c = g.compile()
-    print("✅ Forecasting graph compiled")
+    print("Forecasting graph compiled")
     return c
 
 forecast_graph = build_forecast_graph()

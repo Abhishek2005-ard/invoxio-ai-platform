@@ -33,7 +33,7 @@ async def payment_tool(
     """
     Initiate customer billing or refunds on Stripe.
     """
-    print(f"  💳 [payment_tool] action={action} | amount={currency} {amount} | customer={customer_id}")
+    print(f"  [payment_tool] action={action} | amount={currency} {amount} | customer={customer_id}")
 
     # TODO: Replace with stripe-python SDK:
     # import stripe; stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
@@ -42,7 +42,7 @@ async def payment_tool(
     # elif action == "refund":
     #   refund = stripe.Refund.create(...)
 
-    # ── Stub response ─────────────────────────────────────────────────────
+    # Stub response
     tx_id = "ch_3M4k92LkdIwHu7ix1a8d0f7a"
     return {
         "status":        "success",

@@ -21,7 +21,7 @@ async def ask_bi(req: BIRequest):
       - "Show me cash flow for the last 6 months"
       - "What's my invoice status breakdown?"
     """
-    print(f"\n💬 [POST /bi/ask] '{req.question}' for tenant={req.tenant_id}")
+    print(f"\n[POST /bi/ask] '{req.question}' for tenant={req.tenant_id}")
     initial = {
         "tenant_id":req.tenant_id,"question":req.question,
         "query_intent":"","time_period":{},"dimensions":[],"metrics":[],

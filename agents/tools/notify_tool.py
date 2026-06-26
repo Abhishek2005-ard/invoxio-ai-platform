@@ -27,7 +27,7 @@ async def notify_tool(
     """
     Distribute notifications via Email (SendGrid), SMS/WhatsApp (Twilio), or Slack Webhooks.
     """
-    print(f"  🔔 [notify_tool] channels={channels} | title='{title}' | tenant={tenant_id}")
+    print(f"  [notify_tool] channels={channels} | title='{title}' | tenant={tenant_id}")
 
     results = []
 
@@ -47,16 +47,16 @@ async def notify_tool(
                             mail = Mail(from_email='alerts@invoxio.com', to_emails=recipient, subject=title, html_content=message)
                             sg.send(mail)
                             results.append({"channel": "email", "status": "sent", "to": recipient})
-                            print(f"    📧 Email sent to: {recipient} via SendGrid")
+                            print(f"    Email sent to: {recipient} via SendGrid")
                         except Exception as e:
                             results.append({"channel": "email", "status": "error", "error": str(e), "to": recipient})
-                            print(f"    ❌ Email failed for {recipient}: {e}")
+                            print(f"    Error: Email failed for {recipient}: {e}")
                     else:
                         # Fallback
                         with open("local_emails.log", "a", encoding="utf-8") as f:
                             f.write(f"TO: {recipient}\nSUBJECT: {title}\n{message}\n\n")
                         results.append({"channel": "email", "status": "logged_locally", "to": recipient})
-                        print(f"    📧 Email mock-saved to local_emails.log for: {recipient}")
+                        print(f"    Email mock-saved to local_emails.log for: {recipient}")
 
         elif channel == "slack":
             slack_url = os.getenv("SLACK_WEBHOOK_URL")
@@ -65,22 +65,22 @@ async def notify_tool(
                     async with httpx.AsyncClient() as client:
                         await client.post(slack_url, json={"text": f"*{title}*\n{message}"})
                     results.append({"channel": "slack", "status": "posted", "channel_name": "#alerts"})
-                    print(f"    💬 Slack notification posted")
+                    print(f"    Slack notification posted")
                 except Exception as e:
                     results.append({"channel": "slack", "status": "error", "error": str(e)})
-                    print(f"    ❌ Slack post failed: {e}")
+                    print(f"    Error: Slack post failed: {e}")
             else:
                 with open("local_slack.log", "a", encoding="utf-8") as f:
                     f.write(f"CHANNEL: #alerts\n{title}\n{message}\n\n")
                 results.append({"channel": "slack", "status": "logged_locally"})
-                print(f"    💬 Slack mock-saved to local_slack.log")
+                print(f"    Slack mock-saved to local_slack.log")
 
         elif channel == "sms":
             # TODO: import twilio; twilio.messages.create(...)
             for recipient in recipients:
                 if recipient.startswith(("+", "1", "2", "3", "4", "5", "6", "7", "8", "9")):
                     results.append({"channel": "sms", "status": "stub_sent", "to": recipient})
-                    print(f"    📱 SMS sent to: {recipient}")
+                    print(f"    SMS sent to: {recipient}")
 
     return {
         "status":  "success",

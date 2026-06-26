@@ -37,7 +37,7 @@ async def extract_invoice(
 
     Pipeline: PDF/Image → load_document → ocr_extract → parse_invoice → validate_output → JSON
     """
-    # ── Validate file type ────────────────────────────────────────────────
+    # Validate file type
     content_type = file.content_type or ""
     if content_type not in SUPPORTED_TYPES and not file.filename.lower().endswith((".pdf", ".jpg", ".jpeg", ".png")):
         raise HTTPException(
@@ -45,7 +45,7 @@ async def extract_invoice(
             detail=f"Unsupported file type: {content_type}. Supported: PDF, JPG, PNG, WEBP",
         )
 
-    # ── Read file bytes ───────────────────────────────────────────────────
+    # Read file bytes
     file_bytes = await file.read()
 
     if len(file_bytes) > MAX_FILE_SIZE:
@@ -57,9 +57,9 @@ async def extract_invoice(
     if len(file_bytes) == 0:
         raise HTTPException(status_code=400, detail="Uploaded file is empty")
 
-    print(f"\n📤 [/extract] Received: {file.filename} ({len(file_bytes):,} bytes) for tenant: {tenant_id}")
+    print(f"\n[/extract] Received: {file.filename} ({len(file_bytes):,} bytes) for tenant: {tenant_id}")
 
-    # ── Build initial state ───────────────────────────────────────────────
+    # Build initial state
     initial_state = {
         "file_bytes":         file_bytes,
         "file_name":          file.filename or "invoice.pdf",
@@ -79,13 +79,13 @@ async def extract_invoice(
         "error":              None,
     }
 
-    # ── Run the extraction pipeline ───────────────────────────────────────
+    # Run the extraction pipeline
     try:
         result = await extraction_graph.ainvoke(initial_state)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Extraction failed: {str(e)}")
 
-    # ── Handle errors ─────────────────────────────────────────────────────
+    # Handle errors
     if result.get("error") and not result.get("validated_invoice"):
         raise HTTPException(status_code=422, detail=result["error"])
 

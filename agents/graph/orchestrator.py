@@ -53,16 +53,16 @@ def build_graph() -> StateGraph:
         A compiled LangGraph ready for .ainvoke() or .astream()
     """
 
-    # ── 1. Create the StateGraph with OrchestratorState ──────────────────
+    # 1. Create the StateGraph with OrchestratorState
     graph = StateGraph(OrchestratorState)
 
-    # ── 2. Register all nodes ─────────────────────────────────────────────
+    # 2. Register all nodes
     graph.add_node("think",   think_node)
     graph.add_node("act",     act_node)
     graph.add_node("observe", observe_node)
     graph.add_node("reflect", reflect_node)
 
-    # ── 3. Define edges (the flow between nodes) ──────────────────────────
+    # 3. Define edges (the flow between nodes)
 
     # START → THINK (always begin with planning)
     graph.add_edge(START, "think")
@@ -86,11 +86,11 @@ def build_graph() -> StateGraph:
         },
     )
 
-    # ── 4. Compile and return ─────────────────────────────────────────────
+    # 4. Compile and return
     compiled = graph.compile()
-    print("✅ Master Orchestrator Graph compiled successfully")
+    print("Master Orchestrator Graph compiled successfully")
     return compiled
 
 
-# ── Convenience: pre-built graph singleton ────────────────────────────────────
+# Convenience: pre-built graph singleton
 orchestrator = build_graph()

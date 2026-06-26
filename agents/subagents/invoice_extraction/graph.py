@@ -45,19 +45,19 @@ def build_extraction_graph():
     """
     graph = StateGraph(InvoiceExtractionState)
 
-    # ── Register nodes ────────────────────────────────────────────────────
+    # Register nodes
     graph.add_node("load_document",   load_document_node)
     graph.add_node("ocr_extract",     ocr_extract_node)
     graph.add_node("parse_invoice",   parse_invoice_node)
     graph.add_node("validate_output", validate_output_node)
 
-    # ── Linear edges ──────────────────────────────────────────────────────
+    # Linear edges
     graph.add_edge(START,          "load_document")
     graph.add_edge("load_document", "ocr_extract")
     graph.add_edge("ocr_extract",   "parse_invoice")
     graph.add_edge("parse_invoice", "validate_output")
 
-    # ── Conditional: retry or end ─────────────────────────────────────────
+    # Conditional: retry or end
     graph.add_conditional_edges(
         "validate_output",
         should_retry_or_end,
@@ -68,9 +68,9 @@ def build_extraction_graph():
     )
 
     compiled = graph.compile()
-    print("✅ Invoice Extraction Sub-Agent graph compiled")
+    print("Invoice Extraction Sub-Agent graph compiled")
     return compiled
 
 
-# ── Singleton ─────────────────────────────────────────────────────────────────
+# Singleton
 extraction_graph = build_extraction_graph()

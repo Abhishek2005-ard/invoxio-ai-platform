@@ -36,23 +36,23 @@ async def observe_node(state: OrchestratorState) -> dict:
     """
     observations = state.get("observations", [])
     if not observations:
-        print("⚠️  [OBSERVE] No observations to process")
+        print("Warning: [OBSERVE] No observations to process")
         return {}
 
     latest = observations[-1]
     tool_name = latest.get("tool", "unknown")
     result = latest.get("result", {})
 
-    print(f"\n👁️  [OBSERVE] Analyzing result from: '{tool_name}'")
+    print(f"\n[OBSERVE] Analyzing result from: '{tool_name}'")
 
-    # ── Get original user question ────────────────────────────────────────
+    # Get original user question
     user_question = ""
     for msg in reversed(state["messages"]):
         if hasattr(msg, "type") and msg.type == "human":
             user_question = msg.content if isinstance(msg.content, str) else str(msg.content)
             break
 
-    # ── Ask Gemini to summarize the tool result ───────────────────────────
+    # Ask Gemini to summarize the tool result
     result_str = json.dumps(result, indent=2, default=str)[:2000]  # cap at 2k chars
 
     response = await llm_think.ainvoke([
@@ -65,9 +65,9 @@ async def observe_node(state: OrchestratorState) -> dict:
     ])
 
     summary = response.content if isinstance(response.content, str) else str(response.content)
-    print(f"📝 [OBSERVE] Summary: {summary[:200]}...")
+    print(f"[OBSERVE] Summary: {summary[:200]}...")
 
-    # ── Attach summary to the latest observation ──────────────────────────
+    # Attach summary to the latest observation
     updated_observations = observations[:-1] + [{
         **latest,
         "summary": summary,

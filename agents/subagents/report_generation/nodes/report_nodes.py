@@ -14,7 +14,7 @@ async def gather_data_node(state: ReportGenerationState) -> dict:
     """
     Collects all Business Intelligence metrics needed for the report period.
     """
-    print(f"\n📥 [gather_data] Collecting data for {state.get('period_label')} report...")
+    print(f"\n[gather_data] Collecting data for {state.get('period_label')} report...")
 
     from config.database import get_db
     db = await get_db()
@@ -68,9 +68,9 @@ async def gather_data_node(state: ReportGenerationState) -> dict:
                 "avg_payment_days": 30, # Stub
                 "collection_rate":  f"{(paid_count/total_invoices)*100:.1f}%" if total_invoices > 0 else "0%",
             }
-            print(f"  ✅ DB Data gathered — Revenue: ${bi_data['total_revenue']:,} | Invoices: {bi_data['total_invoices']}")
+            print(f"  DB Data gathered — Revenue: ${bi_data['total_revenue']:,} | Invoices: {bi_data['total_invoices']}")
         except Exception as e:
-            print(f"  ❌ DB Query failed for report: {e}")
+            print(f"  Error: DB Query failed for report: {e}")
 
     if not bi_data:
         # TODO: Replace with real DB calls / invoke bi_graph
@@ -95,7 +95,7 @@ async def gather_data_node(state: ReportGenerationState) -> dict:
             "avg_payment_days": 18,
             "collection_rate":  "76.5%",
         }
-        print(f"  ℹ️ Stub Data gathered — Revenue: ${bi_data['total_revenue']:,} | Invoices: {bi_data['total_invoices']}")
+        print(f"  Info: Stub Data gathered — Revenue: ${bi_data['total_revenue']:,} | Invoices: {bi_data['total_invoices']}")
 
     anomaly_summary = {"duplicate_pairs":2,"fraud_signals":4,"critical_alerts":1,"amount_at_risk":36000}
     return {"bi_data": bi_data, "anomaly_summary": anomaly_summary}
@@ -113,7 +113,7 @@ async def generate_content_node(state: ReportGenerationState) -> dict:
     """
     Uses the LLM to write each report section with a data-backed narrative.
     """
-    print(f"\n✍️  [generate_content] Writing {state.get('report_type')} report sections...")
+    print(f"\n[generate_content] Writing {state.get('report_type')} report sections...")
     bi    = state.get("bi_data", {})
     anom  = state.get("anomaly_summary", {})
     ctx   = f"Period: {state.get('period_label')}\nData: {json.dumps({**bi, **{'anomalies': anom}}, default=str)}"
@@ -133,7 +133,7 @@ async def generate_content_node(state: ReportGenerationState) -> dict:
         if section_key == "executive_summary":
             exec_summary = content
         sections.append({"title": section_key.replace("_"," ").title(), "key": section_key, "content": content})
-        print(f"  📝 Section '{section_key}' written ({len(content)} chars)")
+        print(f"  Section '{section_key}' written ({len(content)} chars)")
 
     return {"report_sections": sections, "executive_summary": exec_summary}
 
@@ -143,7 +143,7 @@ async def render_pdf_node(state: ReportGenerationState) -> dict:
     Generates a PDF from report sections using basic text rendering.
     (Designed to be upgraded to ReportLab or WeasyPrint for production)
     """
-    print(f"\n🖨️  [render_pdf] Generating PDF...")
+    print(f"\n[render_pdf] Generating PDF...")
     sections = state.get("report_sections", [])
     tenant   = state.get("tenant_id", "tenant")
     period   = state.get("period_label", "report")
@@ -164,7 +164,7 @@ async def render_pdf_node(state: ReportGenerationState) -> dict:
     pdf_bytes = pdf_text.encode("utf-8")
 
     filename = f"invoxio_{tenant}_{period.replace(' ','_')}.pdf"
-    print(f"  ✅ PDF ready: {filename} ({len(pdf_bytes):,} bytes)")
+    print(f"  PDF ready: {filename} ({len(pdf_bytes):,} bytes)")
     return {"pdf_bytes": pdf_bytes, "pdf_filename": filename}
 
 
@@ -175,7 +175,7 @@ async def distribute_node(state: ReportGenerationState) -> dict:
     channels   = state.get("channels", ["save"])
     recipients = state.get("recipients", [])
     filename   = state.get("pdf_filename", "report.pdf")
-    print(f"\n📤 [distribute] Sending via: {channels}")
+    print(f"\n[distribute] Sending via: {channels}")
 
     results = []
     for channel in channels:
@@ -184,17 +184,17 @@ async def distribute_node(state: ReportGenerationState) -> dict:
             # import sendgrid; sg.client.mail.send(...)
             for email in recipients:
                 results.append({"channel":"email","status":"sent","detail":f"Sent to {email}"})
-                print(f"  📧 Email → {email}")
+                print(f"  Email → {email}")
 
         elif channel == "slack":
             # TODO: Real Slack webhook
             # import httpx; await httpx.post(SLACK_WEBHOOK, json={...})
             results.append({"channel":"slack","status":"sent","detail":"Posted to #finance channel"})
-            print(f"  💬 Slack → #finance")
+            print(f"  Slack → #finance")
 
         elif channel == "save":
             results.append({"channel":"save","status":"saved","detail":f"Saved as {filename}"})
-            print(f"  💾 Saved → {filename}")
+            print(f"  Saved → {filename}")
 
-    print(f"  ✅ Distribution complete: {len(results)} channel(s)")
+    print(f"  Distribution complete: {len(results)} channel(s)")
     return {"distribution_results": results}

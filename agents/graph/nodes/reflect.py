@@ -58,11 +58,11 @@ async def reflect_node(state: OrchestratorState) -> dict:
     iteration = state.get("iteration", 0)
     max_iter = state.get("max_iterations", settings.agent_max_iterations)
 
-    print(f"\n🪞 [REFLECT] Iteration {iteration + 1}/{max_iter} — Evaluating task completion...")
+    print(f"\n[REFLECT] Iteration {iteration + 1}/{max_iter} — Evaluating task completion...")
 
-    # ── Hard stop: max iterations reached ────────────────────────────────
+    # Hard stop: max iterations reached
     if iteration >= max_iter - 1:
-        print(f"⛔ [REFLECT] Max iterations ({max_iter}) reached — forcing completion")
+        print(f"[REFLECT] Max iterations ({max_iter}) reached — forcing completion")
         observations_text = _format_observations(state.get("observations", []))
         return {
             "is_complete": True,
@@ -75,17 +75,17 @@ async def reflect_node(state: OrchestratorState) -> dict:
             "iteration": iteration + 1,
         }
 
-    # ── Get user's original question ──────────────────────────────────────
+    # Get user's original question
     user_question = ""
     for msg in reversed(state["messages"]):
         if hasattr(msg, "type") and msg.type == "human":
             user_question = msg.content if isinstance(msg.content, str) else str(msg.content)
             break
 
-    # ── Format all observations for context ───────────────────────────────
+    # Format all observations for context
     observations_text = _format_observations(state.get("observations", []))
 
-    # ── Ask Gemini to reflect ─────────────────────────────────────────────
+    # Ask Gemini to reflect
     response = await llm.ainvoke([
         SystemMessage(content=REFLECT_SYSTEM_PROMPT),
         HumanMessage(content=(
@@ -98,12 +98,12 @@ async def reflect_node(state: OrchestratorState) -> dict:
 
     raw = response.content if isinstance(response.content, str) else str(response.content)
 
-    # ── Parse reflection JSON ─────────────────────────────────────────────
+    # Parse reflection JSON
     try:
         cleaned = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
         result = json.loads(cleaned)
     except json.JSONDecodeError:
-        print("⚠️  [REFLECT] JSON parse failed — defaulting to complete")
+        print("Warning: [REFLECT] JSON parse failed — defaulting to complete")
         result = {
             "is_complete": True,
             "reflection": "Could not parse structured reflection.",
@@ -111,9 +111,9 @@ async def reflect_node(state: OrchestratorState) -> dict:
         }
 
     is_complete = result.get("is_complete", True)
-    print(f"{'✅' if is_complete else '🔄'} [REFLECT] Complete: {is_complete} — {result.get('reflection', '')[:100]}")
+    print(f"{'' if is_complete else ''} [REFLECT] Complete: {is_complete} — {result.get('reflection', '')[:100]}")
 
-    # ── If complete, add the final answer to message history ──────────────
+    # If complete, add the final answer to message history
     new_messages = []
     if is_complete and result.get("final_answer"):
         new_messages = [AIMessage(content=result["final_answer"])]
@@ -138,7 +138,7 @@ def _format_observations(observations: list) -> str:
     return "\n".join(lines)
 
 
-# ── Conditional Edge Function ─────────────────────────────────────────────────
+# Conditional Edge Function
 def should_continue(state: OrchestratorState) -> str:
     """
     Conditional edge for LangGraph.
@@ -149,8 +149,8 @@ def should_continue(state: OrchestratorState) -> str:
         "end"    → task is complete, terminate the graph
     """
     if state.get("is_complete", False):
-        print("🏁 [ROUTER] Task complete → END")
+        print("[ROUTER] Task complete → END")
         return "end"
     else:
-        print("🔄 [ROUTER] Task incomplete → loop back to THINK")
+        print("[ROUTER] Task incomplete → loop back to THINK")
         return "think"

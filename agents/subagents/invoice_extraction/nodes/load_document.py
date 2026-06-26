@@ -28,9 +28,9 @@ async def load_document_node(state: InvoiceExtractionState) -> dict:
     file_bytes = state["file_bytes"]
     file_name  = state["file_name"].lower()
 
-    print(f"\n📂 [load_document] Processing: {state['file_name']} ({len(file_bytes):,} bytes)")
+    print(f"\n[load_document] Processing: {state['file_name']} ({len(file_bytes):,} bytes)")
 
-    # ── Detect file type ──────────────────────────────────────────────────
+    # Detect file type
     if file_name.endswith(".pdf"):
         file_type = "pdf"
         pages, page_images, meta = await _load_pdf(file_bytes)
@@ -43,7 +43,7 @@ async def load_document_node(state: InvoiceExtractionState) -> dict:
             "is_valid": False,
         }
 
-    print(f"✅ [load_document] Type: {file_type} | Pages: {meta['page_count']} | "
+    print(f"[load_document] Type: {file_type} | Pages: {meta['page_count']} | "
           f"Text chars: {meta['total_text_chars']}")
 
     return {

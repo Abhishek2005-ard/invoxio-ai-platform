@@ -41,7 +41,7 @@ async def score_outliers_node(state: AnomalyDetectionState) -> dict:
     lower_fence    = q1 - IQR_MULTIPLIER * iqr
     upper_fence    = q3 + IQR_MULTIPLIER * iqr
 
-    print(f"\n📊 [score_outliers] Scoring {len(invoices)} invoices...")
+    print(f"\n[score_outliers] Scoring {len(invoices)} invoices...")
     print(f"  Stats: mean={mean}, std={std}, IQR=[{q1}, {q3}], fences=[{lower_fence:.0f}, {upper_fence:.0f}]")
 
     scores: List[Dict[str, Any]] = []
@@ -52,13 +52,13 @@ async def score_outliers_node(state: AnomalyDetectionState) -> dict:
     for inv in invoices:
         amount = inv["amount"]
 
-        # ── Z-Score ───────────────────────────────────────────────────────
+        # Z-Score
         z_score = (amount - mean) / std if std > 0 else 0.0
 
-        # ── IQR Flag ──────────────────────────────────────────────────────
+        # IQR Flag
         iqr_flag = (amount < lower_fence) or (amount > upper_fence)
 
-        # ── Percentile ────────────────────────────────────────────────────
+        # Percentile
         sorted_amounts = sorted(amounts)
         if sorted_amounts and max_v > min_v:
             rank = sum(1 for a in sorted_amounts if a <= amount)
@@ -66,7 +66,7 @@ async def score_outliers_node(state: AnomalyDetectionState) -> dict:
         else:
             percentile = 50.0
 
-        # ── Final determination ───────────────────────────────────────────
+        # Final determination
         is_outlier = abs(z_score) > Z_SCORE_THRESHOLD or iqr_flag
 
         # Build reason string
@@ -82,7 +82,7 @@ async def score_outliers_node(state: AnomalyDetectionState) -> dict:
 
         if is_outlier:
             outlier_count += 1
-            print(f"  🔴 OUTLIER: {inv['id']} | amount={amount:,.2f} | z={z_score:.2f} | {outlier_reason}")
+            print(f"  OUTLIER: {inv['id']} | amount={amount:,.2f} | z={z_score:.2f} | {outlier_reason}")
 
         scores.append({
             "invoice_id":     inv["id"],
@@ -95,7 +95,7 @@ async def score_outliers_node(state: AnomalyDetectionState) -> dict:
             "outlier_reason": outlier_reason,
         })
 
-    print(f"✅ [score_outliers] {outlier_count}/{len(invoices)} invoices flagged as outliers")
+    print(f"[score_outliers] {outlier_count}/{len(invoices)} invoices flagged as outliers")
 
     return {
         "outlier_scores": scores,
