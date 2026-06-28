@@ -1,4 +1,37 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+
+/**
+ * Custom hook: observes elements and adds a CSS class when they scroll into view.
+ * Returns a ref callback to attach to any element that should animate on scroll.
+ */
+function useScrollReveal() {
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  useEffect(() => {
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+            observerRef.current?.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
+    );
+
+    return () => observerRef.current?.disconnect();
+  }, []);
+
+  const reveal = useCallback((el: HTMLElement | null) => {
+    if (el && observerRef.current) {
+      observerRef.current.observe(el);
+    }
+  }, []);
+
+  return reveal;
+}
 
 interface Step {
   type: 'think' | 'act' | 'observe' | 'reflect' | 'output';
@@ -52,11 +85,183 @@ const PRESETS: QueryPreset[] = [
   }
 ];
 
+interface CarouselSlide {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  image: string;
+  color: string;
+  glowColor: string;
+  bgGradient: string;
+}
+
+const CAROUSEL_SLIDES: CarouselSlide[] = [
+  {
+    id: 'extraction',
+    title: 'Invoice Extraction',
+    subtitle: 'OCR & Parsing',
+    description: 'LLM-powered OCR that understands context, schemas, and complex line items with 99.9% accuracy. Extract vendor details, tax computations, and individual line items automatically.',
+    image: '/invoice_extraction.png',
+    color: 'blue',
+    glowColor: 'rgba(59, 130, 246, 0.12)',
+    bgGradient: 'from-blue-500 to-indigo-600'
+  },
+  {
+    id: 'anomaly',
+    title: 'Anomaly Detection',
+    subtitle: 'Risk & Auditing',
+    description: 'Instant fraud prevention, duplicate billing protection, and compliance auditing. Scans historical patterns to flag irregular pricing, outlier volumes, or unauthorized vendors.',
+    image: '/anomaly_detection.png',
+    color: 'red',
+    glowColor: 'rgba(239, 68, 68, 0.12)',
+    bgGradient: 'from-red-500 to-rose-600'
+  },
+  {
+    id: 'forecasting',
+    title: 'Predictive Forecasting',
+    subtitle: 'Trends & Cash-Flow',
+    description: 'Deep predictive intelligence for revenue, runway, and cash-flow health. Models historical invoicing ledger patterns to project future cash-inflows and optimize resource allocation.',
+    image: '/predictive_forecasting.png',
+    color: 'green',
+    glowColor: 'rgba(16, 185, 129, 0.12)',
+    bgGradient: 'from-emerald-500 to-teal-600'
+  },
+  {
+    id: 'orchestrator',
+    title: 'Master Orchestrator',
+    subtitle: 'Autonomous Agent',
+    description: 'A unified agent console that parses plain English queries, coordinates domain sub-agents, runs external tools, and delivers summarized executive reports in seconds.',
+    image: '/master_orchestrator.png',
+    color: 'purple',
+    glowColor: 'rgba(139, 92, 246, 0.12)',
+    bgGradient: 'from-purple-500 to-violet-600'
+  }
+];
+
+const LOGOS = [
+  {
+    name: 'Modernity',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      </svg>
+    )
+  },
+  {
+    name: 'Pintec',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16"/>
+      </svg>
+    )
+  },
+  {
+    name: 'Apex Finance',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <path d="M12 2L2 22h20L12 2z"/>
+      </svg>
+    )
+  },
+  {
+    name: 'Globex',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+      </svg>
+    )
+  },
+  {
+    name: 'Acme Corp',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+        <line x1="9" y1="9" x2="15" y2="15"/>
+        <line x1="15" y1="9" x2="9" y2="15"/>
+      </svg>
+    )
+  },
+  {
+    name: 'Nexus Tech',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z"/>
+        <path d="M12 6v12M6 12h12"/>
+      </svg>
+    )
+  },
+  {
+    name: 'Vertex',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <path d="M23 6l-9.5 9.5-5-5L1 18"/>
+        <polyline points="17 6 23 6 23 12"/>
+      </svg>
+    )
+  },
+  {
+    name: 'Invenio',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+    )
+  }
+];
+
+const LogoIcon = () => (
+  <svg 
+    width="22" 
+    height="22" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg" 
+    className="group-hover:scale-105 group-hover:rotate-6 transition-transform duration-300 shrink-0"
+  >
+    <defs>
+      <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#2563eb" />
+        <stop offset="100%" stopColor="#4f46e5" />
+      </linearGradient>
+    </defs>
+    <path 
+      d="M12 2L2 7l10 5 10-5-10-5z" 
+      fill="url(#logoGrad)" 
+    />
+    <path 
+      d="M2 17l10 5 10-5" 
+      stroke="url(#logoGrad)" 
+      strokeWidth="2.5" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+    />
+    <path 
+      d="M2 12l10 5 10-5" 
+      stroke="url(#logoGrad)" 
+      strokeWidth="2.5" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      opacity="0.5"
+    />
+  </svg>
+);
+
 export default function LandingPage() {
   const [activePreset, setActivePreset] = useState<QueryPreset>(PRESETS[0]);
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [latency, setLatency] = useState<number>(24);
+
+  // Carousel States
+  const [activeSlide, setActiveSlide] = useState<number>(0);
+  const [carouselIsPlaying, setCarouselIsPlaying] = useState<boolean>(true);
+  const [progress, setProgress] = useState<number>(0);
+
+  // Scroll-triggered animation ref callback
+  const reveal = useScrollReveal();
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -82,6 +287,42 @@ export default function LandingPage() {
     return () => clearInterval(metricTimer);
   }, []);
 
+  // Carousel Auto-Rotation Progress Loop
+  useEffect(() => {
+    if (!carouselIsPlaying) return;
+
+    const intervalTime = 50; // Update every 50ms
+    const totalDuration = 5000; // 5 seconds per slide
+    const increment = (intervalTime / totalDuration) * 100;
+
+    const timer = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          setActiveSlide((prevSlide) => (prevSlide + 1) % CAROUSEL_SLIDES.length);
+          return 0;
+        }
+        return prev + increment;
+      });
+    }, intervalTime);
+
+    return () => clearInterval(timer);
+  }, [carouselIsPlaying]);
+
+  const handleTabClick = (index: number) => {
+    setActiveSlide(index);
+    setProgress(0);
+  };
+
+  const handleNext = () => {
+    setActiveSlide((prev) => (prev + 1) % CAROUSEL_SLIDES.length);
+    setProgress(0);
+  };
+
+  const handlePrev = () => {
+    setActiveSlide((prev) => (prev - 1 + CAROUSEL_SLIDES.length) % CAROUSEL_SLIDES.length);
+    setProgress(0);
+  };
+
   const selectPreset = (preset: QueryPreset) => {
     setActivePreset(preset);
     setCurrentStep(0);
@@ -102,19 +343,6 @@ export default function LandingPage() {
 
   const activeType = getActiveType();
 
-  // Calculate dynamic dashoffset for the flowing connection line in the SVG
-  // 12 o'clock (Think) -> 3 o'clock (Act) -> 6 o'clock (Observe) -> 9 o'clock (Reflect)
-  const getDashOffset = () => {
-    switch (activeType) {
-      case 'think': return 0;
-      case 'act': return -62.8; // 1/4 of circumference
-      case 'observe': return -125.6; // 1/2 of circumference
-      case 'reflect':
-      case 'output':
-        return -188.4; // 3/4 of circumference
-      default: return 0;
-    }
-  };
 
   return (
     <div className="relative min-h-screen bg-slate-50 overflow-x-hidden text-slate-900 font-sans antialiased selection:bg-blue-100 selection:text-blue-800">
@@ -122,163 +350,300 @@ export default function LandingPage() {
       <div className="absolute inset-0 bg-grid-pattern pointer-events-none opacity-100 z-0"></div>
 
       {/* Header Nav */}
-      <header className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-100 z-50">
+      <header className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-100 z-50 animate-fade-in-down">
         <div className="max-w-6xl mx-auto px-6 h-18 flex items-center justify-between">
-          <a href="#" className="flex items-center gap-2 font-bold text-lg text-slate-900 group">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-blue-600 group-hover:rotate-45 transition-transform duration-300">
-              <path d="M12 2v20M2 12h20M5.636 5.636l12.728 12.728M5.636 18.364L18.364 5.636" strokeLinecap="round"/>
-            </svg>
+          <a href="#" className="flex items-center gap-2.5 font-bold text-lg text-slate-900 group">
+            <LogoIcon />
             <span>Invoxio</span>
             <span className="text-[10px] bg-slate-100 text-slate-500 font-mono px-2 py-0.5 rounded-md font-normal ml-1">v1.2.0-beta</span>
           </a>
-          <div className="flex items-center gap-6">
-            <button className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-semibold text-xs px-5 py-2.5 rounded-full transition-all shadow-sm shadow-blue-500/10 cursor-pointer uppercase tracking-wider">
-              Book Demo
+          
+          {/* Central Nav Links */}
+          <nav className="hidden md:flex items-center gap-8">
+            <a 
+              href="#" 
+              className="text-xs font-semibold text-slate-500 hover:text-slate-950 transition-colors uppercase tracking-wider"
+            >
+              Platform
+            </a>
+            <button 
+              onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
+              className="text-xs font-semibold text-slate-500 hover:text-slate-950 transition-colors uppercase tracking-wider cursor-pointer"
+            >
+              ReAct Engine
             </button>
+            <a 
+              href="#" 
+              className="text-xs font-semibold text-slate-500 hover:text-slate-950 transition-colors uppercase tracking-wider"
+            >
+              Security
+            </a>
+            <a 
+              href="#" 
+              className="text-xs font-semibold text-slate-500 hover:text-slate-950 transition-colors uppercase tracking-wider"
+            >
+              Enterprise
+            </a>
+          </nav>
+
+          {/* Action Group */}
+          <div className="flex items-center gap-6">
+            <Link 
+              to="/login" 
+              className="hidden sm:inline-block text-xs font-semibold text-slate-500 hover:text-slate-950 transition-colors uppercase tracking-wider"
+            >
+              Sign In
+            </Link>
+            <Link 
+              to="/register"
+              className="bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-semibold text-xs px-5 py-2.5 rounded-full transition-all shadow-sm shadow-slate-950/10 cursor-pointer uppercase tracking-wider text-center"
+            >
+              Request Demo
+            </Link>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="max-w-4xl mx-auto px-6 pt-20 pb-16 text-center relative z-10">
-        <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-100/60 px-4 py-1.5 rounded-full text-[10px] font-bold text-blue-600 tracking-wider uppercase mb-8">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-          🤖 ALIGNING WORKFLOWS
-        </div>
-        <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.15] mb-6">
-          Autonomous AI for the<br />Modern Finance Team.
+      <section className="max-w-5xl mx-auto px-6 pt-24 pb-16 text-center relative z-10">
+        <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.15] mb-6 animate-fade-in-up delay-100">
+          Autonomous Financial Operations<br />Powered by Multi-Agent AI.
         </h1>
-        <p className="text-base md:text-lg text-slate-500 max-w-2xl mx-auto leading-relaxed mb-8">
-          Invoxio automates invoice processing, detects anomalies in real-time, and generates deep financial insights.
+        <p className="text-base md:text-lg text-slate-500 max-w-3xl mx-auto leading-relaxed mb-8 animate-fade-in-up delay-200">
+          Invoxio orchestrates specialized AI agents to automate document parsing, audit ledger transactions, flag anomalies, and generate predictive BI reports—securely at enterprise scale.
         </p>
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-16">
-          <button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-8 py-3.5 rounded-xl shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all cursor-pointer">
-            Start Free Trial
-          </button>
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-12 animate-fade-in-up delay-300">
+          <Link 
+            to="/register" 
+            className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 active:scale-[0.98] text-white font-bold text-sm px-8 py-4 rounded-xl shadow-lg shadow-slate-950/10 hover:shadow-slate-950/20 transition-all cursor-pointer text-center"
+          >
+            Request Enterprise Access
+          </Link>
           <button 
             onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
-            className="w-full sm:w-auto bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-bold text-sm px-6 py-3.5 rounded-xl shadow-sm transition-all inline-flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full sm:w-auto bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98] text-slate-700 font-bold text-sm px-8 py-4 rounded-xl shadow-sm transition-all inline-flex items-center justify-center gap-2 cursor-pointer"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-400">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-400">
               <path d="M23 7H1a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h22a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zM10 12.5l5 3-5 3v-6z" />
             </svg>
-            Watch the Agent
+            Book Technical Demo
           </button>
         </div>
 
-        {/* Circular Agent Orbit Loop Widget */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-10 max-w-md mx-auto shadow-sm flex items-center justify-center relative min-h-[300px]">
-          {/* Dash connection line SVG */}
-          <svg className="absolute w-52 h-52 pointer-events-none -rotate-90" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="40" stroke="#f1f5f9" strokeWidth="1.5" fill="none" strokeDasharray="3 3" />
-            <circle 
-              cx="50" 
-              cy="50" 
-              r="40" 
-              stroke="#2563eb" 
-              strokeWidth="2" 
-              fill="none" 
-              strokeDasharray="62.8 188.4" 
-              strokeDashoffset={getDashOffset()} 
-              strokeLinecap="round"
-              className="transition-all duration-500 ease-in-out" 
-            />
-          </svg>
+        {/* Security & Compliance Trust Badges */}
+        <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-3 mb-16 animate-fade-in-up delay-400 opacity-80">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 tracking-wider uppercase bg-slate-100/60 px-3 py-1 rounded-full border border-slate-200/50">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            SOC-2 Type II Certified
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 tracking-wider uppercase bg-slate-100/60 px-3 py-1 rounded-full border border-slate-200/50">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-slate-400">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            AES-256 Encryption
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 tracking-wider uppercase bg-slate-100/60 px-3 py-1 rounded-full border border-slate-200/50">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-slate-400">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            99.99% Uptime SLA
+          </div>
+        </div>
 
-          {/* Core loop icons positioned absolutely */}
-          {/* 12 o'clock - THINK */}
+        {/* Workflow Showcase Image Carousel */}
+        <div 
+          onMouseEnter={() => setCarouselIsPlaying(false)}
+          onMouseLeave={() => setCarouselIsPlaying(true)}
+          className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center mt-12 max-w-5xl mx-auto text-left relative animate-fade-in-up delay-500"
+        >
+          {/* Ambient Glow Background Effect */}
           <div 
-            onClick={() => handleNodeClick(0)}
-            className={`absolute top-8 flex flex-col items-center gap-1.5 transition-all duration-300 cursor-pointer ${activeType === 'think' ? 'scale-110' : 'opacity-70 hover:opacity-90'}`}
-          >
-            <div className={`w-11 h-11 rounded-full flex items-center justify-center bg-white shadow-md border ${activeType === 'think' ? 'border-blue-500 text-blue-600 ring-4 ring-blue-50' : 'border-slate-100 text-slate-500'}`}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">Think</span>
+            className="absolute -inset-10 bg-radial blur-[80px] opacity-15 rounded-full transition-all duration-1000 ease-in-out pointer-events-none z-0 animate-glow-pulse"
+            style={{
+              background: `radial-gradient(circle, ${CAROUSEL_SLIDES[activeSlide].glowColor} 0%, rgba(255,255,255,0) 70%)`
+            }}
+          />
+
+          {/* Left Side: Interactive Accordion Tabs */}
+          <div className="lg:col-span-5 flex flex-col gap-4 z-10 relative">
+            {CAROUSEL_SLIDES.map((slide, index) => {
+              const isActive = activeSlide === index;
+              return (
+                <div
+                  key={slide.id}
+                  onClick={() => handleTabClick(index)}
+                  className={`group cursor-pointer p-5 rounded-2xl border transition-all duration-300 relative overflow-hidden ${
+                    isActive 
+                      ? 'bg-white border-slate-200/80 shadow-md shadow-slate-100/50' 
+                      : 'bg-transparent border-transparent hover:bg-slate-100/50'
+                  }`}
+                >
+                  {/* Progress Indicator Bar */}
+                  {isActive && (
+                    <div className="absolute bottom-0 left-0 h-1 bg-slate-100 w-full">
+                      <div 
+                        className={`h-full bg-gradient-to-r ${slide.bgGradient} transition-all duration-75`}
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-4 items-start">
+                    {/* Index Badge */}
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 transition-all ${
+                      isActive 
+                        ? `bg-gradient-to-br ${slide.bgGradient} text-white shadow-sm scale-105` 
+                        : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200 group-hover:text-slate-600'
+                    }`}>
+                      0{index + 1}
+                    </div>
+                    
+                    <div className="flex-grow">
+                      <h3 className={`font-bold text-sm transition-colors ${
+                        isActive ? 'text-slate-900' : 'text-slate-500 group-hover:text-slate-800'
+                      }`}>
+                        {slide.title}
+                      </h3>
+                      <p className={`text-[10px] font-bold tracking-wider uppercase mt-0.5 transition-colors ${
+                        isActive ? 'text-blue-600' : 'text-slate-400'
+                      }`}>
+                        {slide.subtitle}
+                      </p>
+                      
+                      {/* Description Panel */}
+                      <div className={`transition-all duration-300 overflow-hidden ${
+                        isActive ? 'max-h-40 opacity-100 mt-2.5' : 'max-h-0 opacity-0 pointer-events-none'
+                      }`}>
+                        <p className="text-xs text-slate-500 leading-relaxed">
+                          {slide.description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
-          {/* 3 o'clock - ACT */}
-          <div 
-            onClick={() => handleNodeClick(1)}
-            className={`absolute right-8 flex flex-col items-center gap-1.5 transition-all duration-300 cursor-pointer ${activeType === 'act' ? 'scale-110' : 'opacity-70 hover:opacity-90'}`}
-          >
-            <div className={`w-11 h-11 rounded-full flex items-center justify-center bg-white shadow-md border ${activeType === 'act' ? 'border-blue-500 text-blue-600 ring-4 ring-blue-50' : 'border-slate-100 text-slate-500'}`}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+          {/* Right Side: Mock Browser Frame */}
+          <div className="lg:col-span-7 relative z-10">
+            {/* Prev Float Button */}
+            <button 
+              onClick={handlePrev}
+              className="absolute left-[-20px] top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white border border-slate-100 shadow-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer hidden md:flex"
+              title="Previous workflow"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">Act</span>
-          </div>
+            </button>
 
-          {/* 6 o'clock - OBSERVE */}
-          <div 
-            onClick={() => handleNodeClick(2)}
-            className={`absolute bottom-8 flex flex-col items-center gap-1.5 transition-all duration-300 cursor-pointer ${activeType === 'observe' ? 'scale-110' : 'opacity-70 hover:opacity-90'}`}
-          >
-            <div className={`w-11 h-11 rounded-full flex items-center justify-center bg-white shadow-md border ${activeType === 'observe' ? 'border-blue-500 text-blue-600 ring-4 ring-blue-50' : 'border-slate-100 text-slate-500'}`}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
-                <circle cx="12" cy="12" r="3" />
+            {/* Next Float Button */}
+            <button 
+              onClick={handleNext}
+              className="absolute right-[-20px] top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white border border-slate-100 shadow-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer hidden md:flex"
+              title="Next workflow"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">Observe</span>
-          </div>
+            </button>
 
-          {/* 9 o'clock - REFLECT */}
-          <div 
-            onClick={() => handleNodeClick(3)}
-            className={`absolute left-8 flex flex-col items-center gap-1.5 transition-all duration-300 cursor-pointer ${activeType === 'reflect' || activeType === 'output' ? 'scale-110' : 'opacity-70 hover:opacity-90'}`}
-          >
-            <div className={`w-11 h-11 rounded-full flex items-center justify-center bg-white shadow-md border ${activeType === 'reflect' || activeType === 'output' ? 'border-blue-500 text-blue-600 ring-4 ring-blue-50' : 'border-slate-100 text-slate-500'}`}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-              </svg>
+            {/* Mock Browser Container */}
+            <div className="relative rounded-2xl border border-slate-200/80 bg-white p-2.5 shadow-2xl transition-all duration-500 w-full overflow-hidden aspect-[16/10]">
+              {/* Header bar */}
+              <div className="flex items-center justify-between px-3 pb-2.5 border-b border-slate-100 select-none">
+                <div className="flex gap-1.5 items-center">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
+                </div>
+                <div className="bg-slate-50 text-slate-400 px-4 py-1 rounded-md text-[9px] font-mono border border-slate-100/60 w-3/5 text-center truncate">
+                  invoxio.ai/workflows/{CAROUSEL_SLIDES[activeSlide].id}
+                </div>
+                <div className="flex gap-2 text-slate-300">
+                  <button 
+                    onClick={handlePrev}
+                    className="hover:text-slate-600 transition-colors cursor-pointer"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                  <button 
+                    onClick={handleNext}
+                    className="hover:text-slate-600 transition-colors cursor-pointer"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              {/* Viewport showing workflow images with transition */}
+              <div className="relative w-full h-full bg-slate-950 rounded-lg overflow-hidden mt-2.5">
+                {CAROUSEL_SLIDES.map((slide, index) => {
+                  const isActive = activeSlide === index;
+                  return (
+                    <img
+                      key={slide.id}
+                      src={slide.image}
+                      alt={slide.title}
+                      className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out ${
+                        isActive 
+                          ? 'opacity-100 scale-100 pointer-events-auto' 
+                          : 'opacity-0 scale-95 pointer-events-none'
+                      }`}
+                    />
+                  );
+                })}
+              </div>
             </div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">Reflect</span>
-          </div>
-
-          {/* Center visual log details */}
-          <div className="z-10 text-center select-none bg-slate-50/80 backdrop-blur-sm p-3 rounded-full border border-slate-100/50 shadow-inner">
-            <span className="text-[9px] font-bold tracking-widest text-blue-600 uppercase block mb-0.5">State Log</span>
-            <span className="text-xs font-bold text-slate-800 tracking-tight capitalize block">{activeType || 'idle'}</span>
           </div>
         </div>
       </section>
 
       {/* Social Proof */}
-      <section className="border-y border-slate-100 bg-white py-12 text-center relative z-10">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-8">Trusted by modern, forward-thinking teams</div>
-          <div className="flex flex-wrap justify-center items-center gap-x-20 gap-y-6 opacity-60">
-            <div className="flex items-center gap-2 font-bold text-slate-600 text-sm tracking-widest uppercase">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-400">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-              </svg>
-              MODERNITY
-            </div>
-            <div className="flex items-center gap-2 font-bold text-slate-600 text-sm tracking-widest uppercase">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-400">
-                <path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16"/>
-              </svg>
-              PINTEC
-            </div>
+      {/* eslint-disable-next-line -- scroll reveal section */}
+      <section ref={reveal} className="border-y border-slate-100 bg-white py-10 relative z-10 overflow-hidden scroll-reveal">
+        <div className="max-w-5xl mx-auto px-6 mb-6 text-center">
+          <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+            Trusted by modern, forward-thinking teams worldwide
+          </div>
+        </div>
+        
+        {/* Marquee Wrapper with side fading gradients */}
+        <div className="relative flex overflow-x-hidden w-full before:absolute before:left-0 before:top-0 before:z-10 before:h-full before:w-24 before:bg-gradient-to-r before:from-white before:to-transparent after:absolute after:right-0 after:top-0 after:z-10 after:h-full after:w-24 after:bg-gradient-to-l after:from-white after:to-transparent">
+          <div className="flex gap-20 animate-marquee whitespace-nowrap py-2 select-none">
+            {/* First Set of Logos */}
+            {LOGOS.map((logo, index) => (
+              <div key={`logo-1-${index}`} className="flex items-center gap-2.5 text-slate-400 hover:text-slate-700 transition-colors duration-300 font-bold text-sm tracking-widest uppercase cursor-default">
+                {logo.icon}
+                <span>{logo.name}</span>
+              </div>
+            ))}
+            {/* Second Set of Logos (Duplicate for seamless loop) */}
+            {LOGOS.map((logo, index) => (
+              <div key={`logo-2-${index}`} className="flex items-center gap-2.5 text-slate-400 hover:text-slate-700 transition-colors duration-300 font-bold text-sm tracking-widest uppercase cursor-default">
+                {logo.icon}
+                <span>{logo.name}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Intelligent Core Capabilities */}
-      <section className="max-w-4xl mx-auto px-6 py-24 relative z-10">
+      <section ref={reveal} className="max-w-4xl mx-auto px-6 py-24 relative z-10 scroll-reveal">
         <div className="text-center mb-16">
           <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight mb-4">Intelligent Core Capabilities</h2>
         </div>
 
         <div className="flex flex-col gap-6">
           {/* Card 1 */}
-          <div className="bg-white border border-slate-100 rounded-2xl p-8 shadow-sm flex flex-col md:flex-row gap-6 items-start hover:border-blue-200 hover:-translate-y-1 hover:shadow-md hover:shadow-blue-500/5 transition-all duration-300 group relative">
+          <div ref={reveal} className="bg-white border border-slate-100 rounded-2xl p-8 shadow-sm flex flex-col md:flex-row gap-6 items-start hover:border-blue-200 hover:-translate-y-1 hover:shadow-md hover:shadow-blue-500/5 transition-all duration-300 group relative scroll-reveal sr-delay-1">
             <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-purple-50 text-purple-600 shrink-0 border border-purple-100/50">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -297,7 +662,7 @@ export default function LandingPage() {
           </div>
 
           {/* Card 2 */}
-          <div className="bg-white border border-slate-100 rounded-2xl p-8 shadow-sm flex flex-col md:flex-row gap-6 items-start hover:border-blue-200 hover:-translate-y-1 hover:shadow-md hover:shadow-blue-500/5 transition-all duration-300 group relative">
+          <div ref={reveal} className="bg-white border border-slate-100 rounded-2xl p-8 shadow-sm flex flex-col md:flex-row gap-6 items-start hover:border-blue-200 hover:-translate-y-1 hover:shadow-md hover:shadow-blue-500/5 transition-all duration-300 group relative scroll-reveal sr-delay-2">
             <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-red-50 text-red-500 shrink-0 border border-red-100/50">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
@@ -315,7 +680,7 @@ export default function LandingPage() {
           </div>
 
           {/* Card 3 */}
-          <div className="bg-white border border-slate-100 rounded-2xl p-8 shadow-sm flex flex-col md:flex-row gap-6 items-start hover:border-blue-200 hover:-translate-y-1 hover:shadow-md hover:shadow-blue-500/5 transition-all duration-300 group relative">
+          <div ref={reveal} className="bg-white border border-slate-100 rounded-2xl p-8 shadow-sm flex flex-col md:flex-row gap-6 items-start hover:border-blue-200 hover:-translate-y-1 hover:shadow-md hover:shadow-blue-500/5 transition-all duration-300 group relative scroll-reveal sr-delay-3">
             <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-blue-50 text-blue-600 shrink-0 border border-blue-100/50">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <line x1="18" y1="20" x2="18" y2="10" />
@@ -335,7 +700,7 @@ export default function LandingPage() {
           </div>
 
           {/* Card 4 */}
-          <div className="bg-white border border-slate-100 rounded-2xl p-8 shadow-sm flex flex-col md:flex-row gap-6 items-start hover:border-blue-200 hover:-translate-y-1 hover:shadow-md hover:shadow-blue-500/5 transition-all duration-300 group relative">
+          <div ref={reveal} className="bg-white border border-slate-100 rounded-2xl p-8 shadow-sm flex flex-col md:flex-row gap-6 items-start hover:border-blue-200 hover:-translate-y-1 hover:shadow-md hover:shadow-blue-500/5 transition-all duration-300 group relative scroll-reveal sr-delay-4">
             <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-indigo-50 text-indigo-600 shrink-0 border border-indigo-100/50">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -360,7 +725,7 @@ export default function LandingPage() {
 
       {/* Simulator / ReAct Loop Section */}
       <section id="demo" className="bg-slate-100/40 border-y border-slate-200/50 py-24 relative z-10">
-        <div className="max-w-4xl mx-auto px-6">
+        <div ref={reveal} className="max-w-4xl mx-auto px-6 scroll-reveal">
           <div className="text-center mb-16">
             <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight mb-4">The ReAct Loop</h2>
           </div>
@@ -498,64 +863,110 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Box */}
-      <section className="max-w-4xl mx-auto px-6 py-20 relative z-10">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-3xl p-12 text-center text-white shadow-xl shadow-blue-500/10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none"></div>
-          <h2 className="text-2xl md:text-3xl font-extrabold mb-4 tracking-tight">Ready to put your financial operations on autopilot?</h2>
-          <p className="text-blue-100 max-w-xl mx-auto mb-8 text-sm md:text-base leading-relaxed">
-            Join 200+ enterprises optimizing their back-office with Invoxio.ai.
+      <section ref={reveal} className="max-w-4xl mx-auto px-6 py-20 relative z-10 scroll-reveal-scale">
+        <div className="bg-gradient-to-r from-slate-900 to-slate-950 rounded-3xl p-12 text-center text-white shadow-xl shadow-slate-950/10 relative overflow-hidden border border-slate-800">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none animate-glow-pulse"></div>
+          <h2 className="text-2xl md:text-3xl font-extrabold mb-4 tracking-tight">Ready to orchestrate your financial operations?</h2>
+          <p className="text-slate-400 max-w-xl mx-auto mb-8 text-sm md:text-base leading-relaxed">
+            Join leading enterprise finance teams implementing autonomous multi-agent pipelines with Invoxio.
           </p>
-          <button className="bg-white hover:bg-slate-50 text-blue-600 font-bold px-8 py-3.5 rounded-xl shadow-md transition-all hover:scale-[1.02] cursor-pointer">
-            Get Started Free
-          </button>
+          <Link 
+            to="/register" 
+            className="bg-white hover:bg-slate-50 active:scale-[0.98] text-slate-950 font-bold px-8 py-3.5 rounded-xl shadow-md transition-all cursor-pointer text-center inline-block"
+          >
+            Request Enterprise Access
+          </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-100 bg-white py-16 relative z-10">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12">
-            <div>
-              <div className="flex items-center gap-2 font-bold text-slate-900 mb-4 text-base">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-blue-600">
-                  <path d="M12 2v20M2 12h20M5.636 5.636l12.728 12.728M5.636 18.364L18.364 5.636" strokeLinecap="round"/>
-                </svg>
+      <footer ref={reveal} className="border-t border-slate-100 bg-white py-16 relative z-10 scroll-reveal">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-10 mb-16">
+            
+            {/* Column 1: Brand & Status */}
+            <div className="md:col-span-4 flex flex-col gap-4">
+              <a href="#" className="flex items-center gap-2.5 font-bold text-slate-900 text-lg group">
+                <LogoIcon />
                 <span>Invoxio</span>
-              </div>
-              <p className="text-slate-400 text-xs leading-relaxed max-w-xs">
-                Autonomous Finance Orchestration for the global enterprise.
+              </a>
+              <p className="text-slate-500 text-xs leading-relaxed max-w-xs">
+                Autonomous finance operations and multi-agent orchestration for the global enterprise.
               </p>
+              {/* Status Indicator */}
+              <div className="flex items-center gap-2 mt-2 w-max bg-slate-50 border border-slate-200/50 px-3 py-1.5 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="text-[10px] font-bold text-slate-500 tracking-wider uppercase">System Status: Operational</span>
+              </div>
             </div>
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-4">Platform</span>
+
+            {/* Column 2: Platform */}
+            <div className="md:col-span-2 flex flex-col gap-4">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Platform</span>
               <ul className="flex flex-col gap-2.5 text-xs font-semibold text-slate-500">
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Pricing</a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Integrations</a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Network</a></li>
+                <li><a href="#" className="hover:text-blue-600 transition-colors">Invoice Parser</a></li>
+                <li><a href="#" className="hover:text-blue-600 transition-colors">Anomaly Auditor</a></li>
+                <li><a href="#" className="hover:text-blue-600 transition-colors">Predictive Ledger</a></li>
+                <li><a href="#" className="hover:text-blue-600 transition-colors">BI & Insights</a></li>
+                <li><a href="#" className="hover:text-blue-600 transition-colors">Developer APIs</a></li>
               </ul>
             </div>
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-4">Company</span>
+
+            {/* Column 3: Trust & Safety */}
+            <div className="md:col-span-2 flex flex-col gap-4">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Trust & Legal</span>
               <ul className="flex flex-col gap-2.5 text-xs font-semibold text-slate-500">
-                <li><a href="#" className="hover:text-blue-600 transition-colors">About</a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Security</a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Legal</a></li>
+                <li><a href="#" className="hover:text-blue-600 transition-colors">Compliance Center</a></li>
+                <li><a href="#" className="hover:text-blue-600 transition-colors">Trust & Safety</a></li>
+                <li><a href="#" className="hover:text-blue-600 transition-colors">Security Controls</a></li>
+                <li><a href="#" className="hover:text-blue-600 transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="hover:text-blue-600 transition-colors">Terms of Service</a></li>
               </ul>
             </div>
+
+            {/* Column 4: Newsletter Sign-up */}
+            <div className="md:col-span-4 flex flex-col gap-4">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Enterprise Updates</span>
+              <p className="text-slate-500 text-xs leading-relaxed">
+                Subscribe to receive technical insights on agentic finance workflows.
+              </p>
+              <form onSubmit={(e) => e.preventDefault()} className="flex items-center gap-2 mt-1">
+                <input 
+                  type="email" 
+                  placeholder="name@company.com" 
+                  className="bg-slate-50 border border-slate-200 text-slate-800 text-xs px-3.5 py-2.5 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white transition-all w-full font-medium"
+                />
+                <button type="submit" className="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs px-4 py-2.5 rounded-lg transition-all active:scale-95 shrink-0">
+                  Subscribe
+                </button>
+              </form>
+            </div>
+
           </div>
+
+          {/* Bottom Footer Section */}
           <div className="border-t border-slate-100 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-[11px] text-slate-400">
-            <span>© {new Date().getFullYear()} Invoxio AI. Autonomous Finance Orchestration.</span>
+            <div className="flex flex-col gap-1 text-center sm:text-left">
+              <span>© {new Date().getFullYear()} Invoxio AI, Inc. All rights reserved.</span>
+              <span className="opacity-75">Enterprise Cloud hosted in AWS us-east-1 (SOC-2 compliant data center).</span>
+            </div>
+            
+            {/* Social Icons */}
             <div className="flex gap-4">
-              <a href="#" className="hover:text-slate-600 transition-colors">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <a href="#" className="text-slate-400 hover:text-slate-600 transition-colors" aria-label="LinkedIn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z" />
+                  <circle cx="4" cy="4" r="2" />
+                </svg>
+              </a>
+              <a href="#" className="text-slate-400 hover:text-slate-600 transition-colors" aria-label="Twitter">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z" />
                 </svg>
               </a>
-              <a href="#" className="hover:text-slate-600 transition-colors">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+              <a href="#" className="text-slate-400 hover:text-slate-600 transition-colors" aria-label="GitHub">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
                 </svg>
               </a>
             </div>
