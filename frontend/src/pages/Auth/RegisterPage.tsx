@@ -1,10 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../store/AuthContext';
 
 export default function RegisterPage() {
-  const { register } = useAuth();
+  const { register, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, loading, navigate]);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -26,7 +32,7 @@ export default function RegisterPage() {
 
     try {
       await register(name, email, password);
-      navigate('/dashboard');
+      navigate('/');
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {

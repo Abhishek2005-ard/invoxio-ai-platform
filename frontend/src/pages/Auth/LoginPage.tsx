@@ -1,10 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../store/AuthContext';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, loading, navigate]);
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,7 +24,7 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      navigate('/dashboard');
+      navigate('/');
     } catch (err: any) {
       setError(err.message || 'Invalid email or password');
     } finally {

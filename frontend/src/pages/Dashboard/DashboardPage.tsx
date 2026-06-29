@@ -53,6 +53,17 @@ export default function DashboardPage() {
             </div>
 
             <button 
+              onClick={() => navigate('/')}
+              className="text-xs font-bold text-slate-500 hover:text-slate-850 active:scale-95 transition-all cursor-pointer border border-slate-200 hover:border-slate-300 px-3 py-1.5 rounded-lg bg-white flex items-center gap-1.5"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-slate-400">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+              <span>Back</span>
+            </button>
+
+            <button 
               onClick={handleLogout}
               className="text-xs font-bold text-slate-500 hover:text-red-600 transition-colors cursor-pointer border border-slate-200 hover:border-red-200 px-3 py-1.5 rounded-lg bg-white"
             >
