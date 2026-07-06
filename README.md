@@ -1,4 +1,4 @@
-# Invoxio — AI-Powered SaaS Invoice & Business Intelligence Platform
+# Invoxio - AI-Powered SaaS Invoice & Business Intelligence Platform
 
 ## 📁 Project Structure
 
