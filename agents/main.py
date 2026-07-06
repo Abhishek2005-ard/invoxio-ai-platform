@@ -50,15 +50,90 @@ GOOGLE_GEMINI_API_KEY = os.getenv("GOOGLE_GEMINI_API_KEY", "")
 DUMMY = not GOOGLE_GEMINI_API_KEY or "YOUR_KEY_HERE" in GOOGLE_GEMINI_API_KEY
 
 if DUMMY:
-    print("⚠  GOOGLE_GEMINI_API_KEY not set — running in mock (dummy) mode.")
+    print("[WARNING] GOOGLE_GEMINI_API_KEY not set - running in mock (dummy) mode.")
     GOOGLE_GEMINI_API_KEY = "DUMMY_KEY"
 
-llm = ChatGoogleGenerativeAI(
-    model=os.getenv("GEMINI_MODEL", "gemini-1.5-flash"),
-    google_api_key=GOOGLE_GEMINI_API_KEY,
-    temperature=0.0,
-    convert_system_message_to_human=True,
-)
+if DUMMY:
+    class MockLLM:
+        def bind_tools(self, tools):
+            return self
+
+        async def ainvoke(self, messages):
+            # Extract content from list of messages or single message
+            msg = messages[0] if isinstance(messages, list) else messages
+            content = msg.content if hasattr(msg, "content") else str(msg)
+            
+            # Simple wrapper to match the expected langchain response interface
+            class MockResponse:
+                def __init__(self, content):
+                    self.content = content
+                    self.tool_calls = []
+
+            # 1. Pipeline: Extraction Node
+            if "Extract the following fields from the invoice text" in content:
+                amount = 450.0
+                if "15,000" in content or "15000" in content:
+                    amount = 15000.0
+                
+                return MockResponse(json.dumps({
+                    "vendor": "SaaSify LLC" if amount == 450.0 else "Legacy Enterprise Solutions",
+                    "invoice_id": "INV-001" if amount == 450.0 else "INV-002",
+                    "date": "2026-06-15" if amount == 450.0 else "2026-06-18",
+                    "amount": amount,
+                    "tax": amount * 0.1,
+                    "po_number": "PO-1234",
+                    "line_items": [{"description": "Monthly subscription" if amount == 450.0 else "Enterprise support", "price": amount}],
+                    "payment_due_date": "2026-07-15",
+                    "confidence": 0.95
+                }))
+
+            # 2. Pipeline: Validation Node
+            elif "Validate and normalise this extracted invoice JSON" in content:
+                amount = 450.0
+                if "15000" in content or "15,000" in content:
+                    amount = 15000.0
+                return MockResponse(json.dumps({
+                    "vendor": "SaaSify LLC" if amount == 450.0 else "Legacy Enterprise Solutions",
+                    "invoice_id": "INV-001" if amount == 450.0 else "INV-002",
+                    "date": "2026-06-15" if amount == 450.0 else "2026-06-18",
+                    "amount": amount,
+                    "tax": amount * 0.1,
+                    "po_number": "PO-1234",
+                    "status": "valid"
+                }))
+
+            # 3. Pipeline: Categorization Node
+            elif "Classify this invoice into one category from" in content:
+                return MockResponse(json.dumps({
+                    "category": "SaaS / Cloud Infrastructure",
+                    "sub_category": "Hosting",
+                    "confidence": 0.95,
+                    "reason": "Matches hosting keywords."
+                }))
+
+            # 4. Pipeline: Anomaly Node
+            elif "Analyse this invoice for anomalies" in content:
+                return MockResponse(json.dumps({
+                    "anomalies_found": False,
+                    "details": [],
+                    "risk_level": "low"
+                }))
+
+            # 5. Pipeline: Finalize Node
+            elif "Compile the following data into a concise executive summary" in content:
+                return MockResponse("Invoice successfully processed and verified. Category: SaaS / Cloud Infrastructure. Risk: Low.")
+
+            # Default Chat mock response
+            return MockResponse("This is a mock agent response for local testing.")
+
+    llm = MockLLM()
+else:
+    llm = ChatGoogleGenerativeAI(
+        model=os.getenv("GEMINI_MODEL", "gemini-1.5-flash"),
+        google_api_key=GOOGLE_GEMINI_API_KEY,
+        temperature=0.0,
+        convert_system_message_to_human=True,
+    )
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 2. Build all agent tools
@@ -148,7 +223,7 @@ invoice_pipeline = build_invoice_pipeline(llm)
 # In-memory store for pipeline run configs (thread_id → status)
 _pipeline_runs: dict[str, dict] = {}
 
-print("✅ Invoxio Supervisor Orchestrator compiled.")
+print("[OK] Invoxio Supervisor Orchestrator compiled.")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 5. FastAPI
@@ -242,11 +317,16 @@ async def pipeline_process(req: PipelineRequest):
 
         _pipeline_runs[run_id]["status"] = "completed"
         return {
-            "run_id":       run_id,
-            "status":       "completed",
-            "final_report": result.get("final_report", ""),
-            "retry_count":  result.get("retry_count", 1),
-            "confidence":   result.get("confidence", 0),
+            "run_id":          run_id,
+            "status":          "completed",
+            "amount":          result.get("amount", 0.0),
+            "extracted_json":  result.get("extracted_json", ""),
+            "validated_json":  result.get("validated_json", ""),
+            "category":        result.get("category", ""),
+            "anomaly_report":  result.get("anomaly_report", ""),
+            "final_report":    result.get("final_report", ""),
+            "retry_count":     result.get("retry_count", 1),
+            "confidence":      result.get("confidence", 0.0),
         }
 
     except Exception as e:
@@ -288,11 +368,16 @@ async def pipeline_approve(req: ApprovalRequest):
 
         _pipeline_runs[req.run_id]["status"] = "completed"
         return {
-            "run_id":       req.run_id,
-            "status":       "completed",
-            "decision":     req.decision,
-            "reviewer":     req.reviewer,
-            "final_report": result.get("final_report", ""),
+            "run_id":          req.run_id,
+            "status":          "completed",
+            "decision":        req.decision,
+            "reviewer":        req.reviewer,
+            "amount":          result.get("amount", 0.0),
+            "extracted_json":  result.get("extracted_json", ""),
+            "validated_json":  result.get("validated_json", ""),
+            "category":        result.get("category", ""),
+            "anomaly_report":  result.get("anomaly_report", ""),
+            "final_report":    result.get("final_report", ""),
         }
 
     except Exception as e:

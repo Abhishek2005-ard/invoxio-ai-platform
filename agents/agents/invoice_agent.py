@@ -21,7 +21,7 @@ class InvoiceState(TypedDict):
 
 def clean_text(state: InvoiceState) -> dict:
     """Normalise whitespace before passing to the LLM."""
-    print("  └─ [Invoice Agent] clean_text")
+    print("[Invoice Agent] clean_text")
     cleaned = " ".join(state["invoice_text"].split())
     return {"invoice_text": cleaned}
 
