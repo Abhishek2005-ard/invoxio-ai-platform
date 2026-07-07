@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useAuth } from '../../store/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -15,25 +15,19 @@ async function askAgent(message: string): Promise<string> {
   return d.answer ?? JSON.stringify(d);
 }
 
-// ── Types ──────────────────────────────────────────────────────────────────
+// Types
 interface Invoice {
   id: string;
+  dbId?: string;
   vendor: string;
   amount: string;
   date: string;
-  status: 'Paid' | 'Pending' | 'Overdue';
+  status: 'Paid' | 'Pending' | 'Overdue' | 'Rejected';
   po: string;
   tax: string;
 }
 
-// ── Mock extracted invoices ────────────────────────────────────────────────
-const MOCK_INVOICES: Invoice[] = [
-  { id: 'INV-1042', vendor: 'Globex Corp', amount: '$12,400', date: '2026-06-15', status: 'Paid',    po: 'PO-8821', tax: '$1,116' },
-  { id: 'INV-1041', vendor: 'ACME Supplies', amount: '$3,250',  date: '2026-06-10', status: 'Pending', po: 'PO-8819', tax: '$292'  },
-  { id: 'INV-1040', vendor: 'Initech Ltd',  amount: '$8,750',  date: '2026-05-28', status: 'Overdue', po: '—',      tax: '$787'  },
-  { id: 'INV-1039', vendor: 'CloudNest',    amount: '$4,500',  date: '2026-05-20', status: 'Paid',    po: 'PO-8804', tax: '$405'  },
-  { id: 'INV-1038', vendor: 'DataBridge',   amount: '$1,800',  date: '2026-05-12', status: 'Paid',    po: 'PO-8800', tax: '$162'  },
-];
+
 
 const INSIGHTS = [
   { icon: '📉', color: 'bg-red-50 border-red-200', badge: 'Anomaly', badgeColor: 'bg-red-100 text-red-700', title: 'Duplicate Invoice Detected', body: 'INV-1038 from DataBridge matches a previous entry ($1,800 on May 3). Review before approval.' },
@@ -46,11 +40,11 @@ const statusStyle: Record<string, string> = {
   Paid:    'bg-emerald-50 text-emerald-700 border-emerald-200',
   Pending: 'bg-amber-50 text-amber-700 border-amber-200',
   Overdue: 'bg-red-50 text-red-700 border-red-200',
+  Rejected: 'bg-rose-50 text-rose-700 border-rose-200',
 };
 
-// ══════════════════════════════════════════════════════════════════════════════
 export default function DashboardPage() {
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const navigate = useNavigate();
 
   // Upload
@@ -58,7 +52,13 @@ export default function DashboardPage() {
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<string | null>(null);
-  const [invoices, setInvoices] = useState<Invoice[]>(MOCK_INVOICES);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+
+  // Camera Scanner
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [showScanner, setShowScanner] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
   // NL Query
   const [query, setQuery] = useState('');
@@ -66,37 +66,187 @@ export default function DashboardPage() {
   const [queryResult, setQueryResult] = useState<string | null>(null);
   const [queryError, setQueryError] = useState<string | null>(null);
 
+  // Stats
+  const [stats, setStats] = useState({
+    totalInvoices: 0,
+    totalExtracted: '$0',
+    overdueInvoices: 0,
+    projectedRunway: '18.4 mo',
+  });
+
+  // Fetch invoices and calculate stats dynamically
+  const fetchInvoices = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch('http://localhost:5000/api/invoices', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) throw new Error('Failed to fetch invoices');
+      const data = await res.json();
+      if (data.success && data.data) {
+        const rawInvoices = data.data;
+
+        // Map invoices
+        const mapped: Invoice[] = rawInvoices.map((inv: any) => ({
+          id: inv.runId || inv._id || `INV-${Date.now()}`,
+          dbId: inv._id,
+          vendor: inv.extractedData?.vendor || 'Unknown Vendor',
+          amount: inv.extractedData?.amount ? `$${Number(inv.extractedData.amount).toLocaleString()}` : (inv.amount ? `$${Number(inv.amount).toLocaleString()}` : '$—'),
+          date: inv.extractedData?.date || (inv.createdAt ? new Date(inv.createdAt).toISOString().split('T')[0] : '—'),
+          status: inv.status === 'completed' ? 'Paid' : (inv.status === 'awaiting_approval' ? 'Pending' : (inv.status === 'rejected' ? 'Rejected' : 'Overdue')),
+          po: inv.extractedData?.po_number || '—',
+          tax: inv.extractedData?.tax ? `$${Number(inv.extractedData.tax).toLocaleString()}` : '$—',
+        }));
+        setInvoices(mapped);
+
+        // Compute metrics dynamically
+        const totalInvoices = rawInvoices.length;
+
+        const totalExtractedSum = rawInvoices.reduce((sum: number, inv: any) => {
+          const amt = inv.extractedData?.amount || inv.amount || 0;
+          return sum + Number(amt);
+        }, 0);
+
+        const overdueCount = rawInvoices.filter((inv: any) => 
+          inv.status !== 'completed' && inv.status !== 'awaiting_approval' && inv.status !== 'rejected'
+        ).length;
+
+        // Projected runway calculation: assume starting balance of $150,000
+        const monthlyBurn = rawInvoices
+          .filter((inv: any) => inv.status === 'completed' || inv.status === 'awaiting_approval')
+          .reduce((sum: number, inv: any) => sum + Number(inv.extractedData?.amount || inv.amount || 0), 0);
+
+        // If monthlyBurn is extremely small or zero, we default to 18.4 months baseline, otherwise dynamically calculate
+        const runwayMonths = monthlyBurn > 0 ? Math.max(1, Math.min(60, 150000 / monthlyBurn)) : 18.4;
+        const projectedRunway = `${runwayMonths.toFixed(1)} mo`;
+
+        setStats({
+          totalInvoices,
+          totalExtracted: `$${totalExtractedSum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          overdueInvoices: overdueCount,
+          projectedRunway,
+        });
+      }
+    } catch (e) {
+      console.error('Error fetching invoices:', e);
+    }
+  }, [token]);
+
+  // Fetch invoices on component mount
+  useEffect(() => {
+    fetchInvoices();
+  }, [fetchInvoices]);
+
   // ── File handler ───────────────────────────────────────────────────────
-  const handleFiles = useCallback(async (files: FileList | null) => {
+  const handleFiles = useCallback(async (files: FileList | File[] | null) => {
     if (!files || files.length === 0) return;
     const file = files[0];
     setUploading(true);
     setUploadResult(null);
 
-    // Simulate reading file name and calling agent
-    const fakeName = file.name.replace(/\.[^.]+$/, '');
-    const prompt = `Extract invoice data from a document named "${file.name}". Return structured fields: Vendor Name, Invoice ID, Invoice Date, Total Amount, Tax Amount, PO Number, Line Items, and Payment Status.`;
+    const formData = new FormData();
+    formData.append('file', file);
 
     try {
-      const result = await askAgent(prompt);
-      setUploadResult(result);
-      // Add mock entry to table
-      const newInv: Invoice = {
-        id: `INV-${1043 + invoices.length - MOCK_INVOICES.length}`,
-        vendor: fakeName.split(/[-_]/)[0] ?? 'Unknown Vendor',
-        amount: '$—',
-        date: new Date().toISOString().split('T')[0],
-        status: 'Pending',
-        po: '—',
-        tax: '$—',
-      };
-      setInvoices(prev => [newInv, ...prev]);
+      const res = await fetch('http://localhost:5000/api/invoices/process', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || `Upload failed with status ${res.status}`);
+      }
+      const data = await res.json();
+      
+      if (data.success && data.data) {
+        const inv = data.data;
+        setUploadResult(JSON.stringify(inv, null, 2));
+        fetchInvoices();
+      } else {
+        throw new Error(data.message || 'Processing failed');
+      }
     } catch (e) {
       setUploadResult(`Error: ${String(e)}`);
     } finally {
       setUploading(false);
     }
-  }, [invoices.length]);
+  }, [token, fetchInvoices]);
+
+  const startCamera = async () => {
+    setCameraError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+      });
+      setCameraStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err: any) {
+      console.error('Camera access error:', err);
+      setCameraError(err.message || 'Could not access the camera. Make sure you have granted permission.');
+    }
+  };
+
+  const stopCamera = useCallback(() => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+  }, [cameraStream]);
+
+  const capturePhoto = useCallback(() => {
+    if (!videoRef.current) return;
+    
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], `scanned-invoice-${Date.now()}.jpg`, { type: 'image/jpeg' });
+          handleFiles([file]);
+        }
+        stopCamera();
+        setShowScanner(false);
+      }, 'image/jpeg', 0.95);
+    }
+  }, [handleFiles, stopCamera]);
+
+  const handleApprove = useCallback(async (invoiceId: string, decision: 'approved' | 'rejected') => {
+    if (!token) return;
+    try {
+      const res = await fetch('http://localhost:5000/api/invoices/approve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          invoiceId,
+          decision,
+        }),
+      });
+      if (!res.ok) {
+        throw new Error('Approval request failed');
+      }
+      const data = await res.json();
+      if (data.success) {
+        fetchInvoices();
+      }
+    } catch (e) {
+      console.error('Error in handleApprove:', e);
+    }
+  }, [token, fetchInvoices]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -148,6 +298,14 @@ export default function DashboardPage() {
               <p className="text-xs font-bold text-slate-800">{user?.name}</p>
               <p className="text-[10px] text-slate-400">{user?.email}</p>
             </div>
+            <button onClick={() => navigate('/')}
+              className="text-xs font-semibold text-slate-500 hover:text-blue-600 border border-slate-200 hover:border-blue-200 px-3 py-1.5 rounded-lg bg-white transition-colors cursor-pointer flex items-center gap-1">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"/>
+                <polyline points="12 19 5 12 12 5"/>
+              </svg>
+              Back to Home
+            </button>
             <button onClick={() => { logout(); navigate('/'); }}
               className="text-xs font-semibold text-slate-500 hover:text-red-600 border border-slate-200 hover:border-red-200 px-3 py-1.5 rounded-lg bg-white transition-colors cursor-pointer">
               Log Out
@@ -161,10 +319,10 @@ export default function DashboardPage() {
         {/* ── KPI Row ──────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: 'Total Invoices', value: '1,248', sub: 'This quarter', up: true, delta: '+14%' },
-            { label: 'Total Extracted', value: '$284,600', sub: 'Auto-parsed value', up: true, delta: '+9%' },
-            { label: 'Overdue Invoices', value: '3', sub: '1 high risk', up: false, delta: 'Action needed' },
-            { label: 'Projected Runway', value: '18.4 mo', sub: 'Based on cash flow', up: true, delta: '+1.2 mo' },
+            { label: 'Total Invoices', value: stats.totalInvoices.toString(), sub: 'Active database count', up: true, delta: 'Live' },
+            { label: 'Total Extracted', value: stats.totalExtracted, sub: 'Auto-parsed sum', up: true, delta: 'Live' },
+            { label: 'Overdue Invoices', value: stats.overdueInvoices.toString(), sub: 'Needs immediate review', up: stats.overdueInvoices === 0, delta: stats.overdueInvoices === 0 ? 'Clear' : 'Pending' },
+            { label: 'Projected Runway', value: stats.projectedRunway, sub: 'Dynamic cash estimate', up: true, delta: 'Forecast' },
           ].map(k => (
             <div key={k.label} className="bg-white border border-slate-200/70 rounded-2xl p-5 shadow-sm flex flex-col gap-1">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{k.label}</span>
@@ -182,9 +340,21 @@ export default function DashboardPage() {
 
           {/* Upload Zone */}
           <div className="bg-white border border-slate-200/70 rounded-2xl p-6 shadow-sm flex flex-col gap-4">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">Upload Invoice</h2>
-              <p className="text-xs text-slate-500 mt-0.5">PDF, scanned image, or email attachment — AI extracts everything automatically.</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">Upload Invoice</h2>
+                <p className="text-xs text-slate-500 mt-0.5">PDF, scanned image, or email attachment — AI extracts everything automatically.</p>
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowScanner(true); startCamera(); }}
+                className="text-xs font-semibold text-blue-600 hover:text-blue-700 border border-blue-200 hover:border-blue-300 px-3 py-1.5 rounded-lg bg-blue-50/50 hover:bg-blue-50 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+                Scan Invoice
+              </button>
             </div>
 
             <div
@@ -302,7 +472,7 @@ export default function DashboardPage() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100 text-left">
-                  {['Invoice ID', 'Vendor', 'Amount', 'Tax', 'PO Number', 'Date', 'Status'].map(h => (
+                  {['Invoice ID', 'Vendor', 'Amount', 'Tax', 'PO Number', 'Date', 'Status', 'Actions'].map(h => (
                     <th key={h} className="px-5 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -319,6 +489,26 @@ export default function DashboardPage() {
                     <td className="px-5 py-3.5">
                       <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${statusStyle[inv.status]}`}>{inv.status}</span>
                     </td>
+                    <td className="px-5 py-3.5">
+                      {inv.status === 'Pending' && inv.dbId ? (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleApprove(inv.dbId!, 'approved')}
+                            className="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-1 rounded transition-colors cursor-pointer"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleApprove(inv.dbId!, 'rejected')}
+                            className="bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-extrabold px-2 py-1 rounded transition-colors cursor-pointer"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-slate-350">—</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -327,6 +517,83 @@ export default function DashboardPage() {
         </div>
 
       </main>
+
+      {/* ── Camera Scanner Modal ────────────────────────────────────────── */}
+      {showScanner && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 shadow-2xl rounded-3xl w-full max-w-lg overflow-hidden flex flex-col gap-4 p-6 relative">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                  <svg className="text-blue-500 animate-pulse" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <circle cx="12" cy="12" r="10"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  Scan Invoice Document
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">Align the invoice within the scanner frame.</p>
+              </div>
+              <button
+                onClick={() => { stopCamera(); setShowScanner(false); }}
+                className="w-8 h-8 rounded-full border border-slate-200 hover:border-red-200 hover:bg-red-50 text-slate-400 hover:text-red-600 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Camera View Area */}
+            <div className="relative rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden aspect-[4/3] flex items-center justify-center">
+              {cameraError ? (
+                <div className="p-6 text-center flex flex-col items-center gap-3">
+                  <span className="text-3xl">⚠️</span>
+                  <p className="text-xs font-semibold text-slate-400 leading-relaxed">{cameraError}</p>
+                  <button onClick={startCamera} className="text-xs font-bold text-blue-500 hover:underline">Retry Camera Connection</button>
+                </div>
+              ) : (
+                <>
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-cover transform scale-x-[-1]"
+                  />
+                  {/* Scanner overlay alignment box */}
+                  <div className="absolute inset-6 border-2 border-dashed border-blue-400/60 rounded-xl pointer-events-none flex items-center justify-center">
+                    <div className="absolute inset-0 bg-blue-500/5 animate-pulse rounded-xl" />
+                    <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest bg-slate-900/80 px-2.5 py-1 rounded-full backdrop-blur-sm">
+                      Align Document
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => { stopCamera(); setShowScanner(false); }}
+                className="flex-1 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-800 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={capturePhoto}
+                disabled={!!cameraError || !cameraStream}
+                className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/20"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                Capture Photo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

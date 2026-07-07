@@ -19,22 +19,52 @@ const safeParseJSON = (str) => {
 };
 
 /**
+ * Helper to guarantee a value is cast to a clean string.
+ */
+const safeString = (val) => {
+  if (val === null || val === undefined) return '';
+  if (typeof val === 'string') return val;
+  if (Array.isArray(val) || typeof val === 'object') {
+    try {
+      return JSON.stringify(val, null, 2);
+    } catch {
+      return String(val);
+    }
+  }
+  return String(val);
+};
+
+/**
  * Trigger the invoice processing pipeline by sending the raw text to the Python agent.
  */
 const processInvoice = async (req, res) => {
-  const { invoiceText } = req.body;
+  let requestBody = {};
+  let rawText = '';
 
-  if (!invoiceText) {
-    return res.status(400).json({
-      success: false,
-      message: 'invoiceText is required',
-    });
+  if (req.file) {
+    const base64Data = req.file.buffer.toString('base64');
+    rawText = `[Uploaded File: ${req.file.originalname}]`;
+    requestBody = {
+      file_data: base64Data,
+      mime_type: req.file.mimetype,
+      file_name: req.file.originalname,
+    };
+  } else {
+    const { invoiceText } = req.body;
+    if (!invoiceText) {
+      return res.status(400).json({
+        success: false,
+        message: 'invoiceText or file upload is required',
+      });
+    }
+    rawText = invoiceText;
+    requestBody = { invoice_text: invoiceText };
   }
 
   // 1. Create a processing record in MongoDB
   const invoice = new Invoice({
     userId: req.user._id,
-    rawText: invoiceText,
+    rawText,
     status: 'processing',
   });
 
@@ -49,7 +79,7 @@ const processInvoice = async (req, res) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ invoice_text: invoiceText }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -67,7 +97,7 @@ const processInvoice = async (req, res) => {
     invoice.retryCount = data.retry_count || 1;
 
     if (data.status === 'completed') {
-      invoice.finalReport = data.final_report || '';
+      invoice.finalReport = safeString(data.final_report);
       // On completion, we also have validated_json, category, anomaly_report
       invoice.extractedData = safeParseJSON(data.validated_json || data.extracted_json);
       invoice.category = safeParseJSON(data.category);
@@ -155,7 +185,7 @@ const approveInvoice = async (req, res) => {
 
     // 3. Update the invoice status based on human decision
     invoice.status = decision === 'rejected' ? 'rejected' : 'completed';
-    invoice.finalReport = data.final_report || '';
+    invoice.finalReport = safeString(data.final_report);
 
     // If there is any updated data returned upon completion
     if (data.validated_json) {

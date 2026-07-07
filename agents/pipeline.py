@@ -40,6 +40,9 @@ MAX_RETRIES          = 3        # max extraction retry cycles
 class InvoiceState(TypedDict):
     # Input
     raw_text:          str
+    file_data:         Optional[str]
+    mime_type:         Optional[str]
+    file_name:         Optional[str]
 
     # Extraction (node 1)
     extracted_json:    str
@@ -63,9 +66,21 @@ class InvoiceState(TypedDict):
 # Node helpers
 # ══════════════════════════════════════════════════════════════════════════════
 
+def _get_text_content(content) -> str:
+    if isinstance(content, list):
+        parts = []
+        for part in content:
+            if isinstance(part, dict) and "text" in part:
+                parts.append(part["text"])
+            elif isinstance(part, str):
+                parts.append(part)
+        return "".join(parts)
+    return str(content)
+
+
 async def _llm_call(llm, prompt: str) -> str:
     resp = await llm.ainvoke([HumanMessage(content=prompt)])
-    return resp.content
+    return _get_text_content(resp.content)
 
 
 # ── Node 1: Extraction (loops back if confidence is low) ──────────────────
@@ -75,17 +90,40 @@ async def extraction_node(state: InvoiceState, llm) -> dict:
     print(f"[Pipeline] extraction_node  attempt={attempt}")
 
     prompt = (
-        "Extract the following fields from the invoice text and return a JSON object:\n"
+        "Extract the following fields from the invoice document and return a JSON object:\n"
         "vendor, invoice_id, date (ISO 8601), amount (float), tax (float), "
         "po_number, line_items (list), payment_due_date, confidence (float 0-1 "
         "reflecting how complete and unambiguous the extraction was).\n\n"
-        f"Invoice text (attempt {attempt}):\n{state['raw_text']}"
     )
-    raw = await _llm_call(llm, prompt)
+
+    file_data = state.get("file_data")
+    mime_type = state.get("mime_type")
+
+    if file_data and mime_type:
+        print(f"[Pipeline] Using multimodal extraction for file: {state.get('file_name', 'document')}")
+        content = [
+            {"type": "text", "text": prompt},
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:{mime_type};base64,{file_data}"}
+            }
+        ]
+        resp = await llm.ainvoke([HumanMessage(content=content)])
+        raw = _get_text_content(resp.content)
+    else:
+        print("[Pipeline] Using text-based extraction")
+        full_prompt = prompt + f"Invoice text (attempt {attempt}):\n{state['raw_text']}"
+        resp = await llm.ainvoke([HumanMessage(content=full_prompt)])
+        raw = _get_text_content(resp.content)
 
     # Parse confidence from response
     try:
-        data = json.loads(raw.strip("` \n").lstrip("json"))
+        # Strip code blocks or "json" header if present
+        clean_raw = raw.strip("` \n")
+        if clean_raw.lower().startswith("json"):
+            clean_raw = clean_raw[4:].strip()
+        
+        data = json.loads(clean_raw)
         confidence = float(data.get("confidence", 0.5))
         amount     = float(str(data.get("amount", 0)).replace(",", "").replace("$", "") or 0)
     except Exception:
