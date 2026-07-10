@@ -2,7 +2,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useAuth } from '../../store/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const AGENT_API = 'http://localhost:8000/api/agent/chat';
+const BACKEND_API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const AGENT_API = (import.meta.env.VITE_AGENT_API_URL || 'http://localhost:8000') + '/api/agent/chat';
 
 async function askAgent(message: string): Promise<string> {
   const res = await fetch(AGENT_API, {
@@ -78,7 +79,7 @@ export default function DashboardPage() {
   const fetchInvoices = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await fetch('http://localhost:5000/api/invoices', {
+      const res = await fetch(`${BACKEND_API}/api/invoices`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -150,7 +151,7 @@ export default function DashboardPage() {
     formData.append('file', file);
 
     try {
-      const res = await fetch('http://localhost:5000/api/invoices/process', {
+      const res = await fetch(`${BACKEND_API}/api/invoices/process`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -225,7 +226,7 @@ export default function DashboardPage() {
   const handleApprove = useCallback(async (invoiceId: string, decision: 'approved' | 'rejected') => {
     if (!token) return;
     try {
-      const res = await fetch('http://localhost:5000/api/invoices/approve', {
+      const res = await fetch(`${BACKEND_API}/api/invoices/approve`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
