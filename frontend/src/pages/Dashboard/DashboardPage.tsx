@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useAuth } from '../../store/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import MarkdownRenderer from '../../components/layout/MarkdownRenderer';
+
 
 const BACKEND_API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const AGENT_API = (import.meta.env.VITE_AGENT_API_URL || 'http://localhost:8000') + '/api/agent/chat';
@@ -16,7 +18,7 @@ async function askAgent(message: string): Promise<string> {
   return d.answer ?? JSON.stringify(d);
 }
 
-// Types
+// Invoice shape used across the table and approval actions
 interface Invoice {
   id: string;
   dbId?: string;
@@ -48,26 +50,26 @@ export default function DashboardPage() {
   const { user, token, logout } = useAuth();
   const navigate = useNavigate();
 
-  // Upload
+  // Upload zone state
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<string | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
 
-  // Camera Scanner
+  // Camera scanner state
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showScanner, setShowScanner] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  // NL Query
+  // Natural language query state
   const [query, setQuery] = useState('');
   const [queryLoading, setQueryLoading] = useState(false);
   const [queryResult, setQueryResult] = useState<string | null>(null);
   const [queryError, setQueryError] = useState<string | null>(null);
 
-  // Stats
+  // KPI metrics shown in the top stat cards
   const [stats, setStats] = useState({
     totalInvoices: 0,
     totalExtracted: '$0',
@@ -75,7 +77,7 @@ export default function DashboardPage() {
     projectedRunway: '18.4 mo',
   });
 
-  // Fetch invoices and calculate stats dynamically
+  // Pull invoices from backend and compute all KPI values
   const fetchInvoices = useCallback(async () => {
     if (!token) return;
     try {
@@ -89,7 +91,7 @@ export default function DashboardPage() {
       if (data.success && data.data) {
         const rawInvoices = data.data;
 
-        // Map invoices
+        // Normalize each raw invoice into the display shape
         const mapped: Invoice[] = rawInvoices.map((inv: any) => ({
           id: inv.runId || inv._id || `INV-${Date.now()}`,
           dbId: inv._id,
@@ -102,7 +104,7 @@ export default function DashboardPage() {
         }));
         setInvoices(mapped);
 
-        // Compute metrics dynamically
+        // Compute KPI values from the fetched data
         const totalInvoices = rawInvoices.length;
 
         const totalExtractedSum = rawInvoices.reduce((sum: number, inv: any) => {
@@ -114,12 +116,12 @@ export default function DashboardPage() {
           inv.status !== 'completed' && inv.status !== 'awaiting_approval' && inv.status !== 'rejected'
         ).length;
 
-        // Projected runway calculation: assume starting balance of $150,000
+        // Runway = starting balance / monthly burn; defaults to 18.4 mo when burn is zero
         const monthlyBurn = rawInvoices
           .filter((inv: any) => inv.status === 'completed' || inv.status === 'awaiting_approval')
           .reduce((sum: number, inv: any) => sum + Number(inv.extractedData?.amount || inv.amount || 0), 0);
 
-        // If monthlyBurn is extremely small or zero, we default to 18.4 months baseline, otherwise dynamically calculate
+
         const runwayMonths = monthlyBurn > 0 ? Math.max(1, Math.min(60, 150000 / monthlyBurn)) : 18.4;
         const projectedRunway = `${runwayMonths.toFixed(1)} mo`;
 
@@ -135,7 +137,7 @@ export default function DashboardPage() {
     }
   }, [token]);
 
-  // Fetch invoices on component mount
+  // Load invoices when the component first renders
   useEffect(() => {
     fetchInvoices();
   }, [fetchInvoices]);
@@ -274,9 +276,9 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#f8fafc] font-sans flex flex-col">
 
-      {/* ── Navbar ─────────────────────────────────────────────────────── */}
+      {/* Sticky top navbar */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 font-extrabold text-slate-900 text-base">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
               <defs>
@@ -300,12 +302,12 @@ export default function DashboardPage() {
               <p className="text-[10px] text-slate-400">{user?.email}</p>
             </div>
             <button onClick={() => navigate('/')}
-              className="text-xs font-semibold text-slate-500 hover:text-blue-600 border border-slate-200 hover:border-blue-200 px-3 py-1.5 rounded-lg bg-white transition-colors cursor-pointer flex items-center gap-1">
+              className="hidden sm:flex text-xs font-semibold text-slate-500 hover:text-blue-600 border border-slate-200 hover:border-blue-200 px-3 py-1.5 rounded-lg bg-white transition-colors cursor-pointer items-center gap-1">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="19" y1="12" x2="5" y2="12"/>
                 <polyline points="12 19 5 12 12 5"/>
               </svg>
-              Back to Home
+              Home
             </button>
             <button onClick={() => { logout(); navigate('/'); }}
               className="text-xs font-semibold text-slate-500 hover:text-red-600 border border-slate-200 hover:border-red-200 px-3 py-1.5 rounded-lg bg-white transition-colors cursor-pointer">
@@ -315,17 +317,17 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 flex flex-col gap-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6 sm:gap-8">
 
-        {/* ── KPI Row ──────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* KPI stat cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           {[
             { label: 'Total Invoices', value: stats.totalInvoices.toString(), sub: 'Active database count', up: true, delta: 'Live' },
             { label: 'Total Extracted', value: stats.totalExtracted, sub: 'Auto-parsed sum', up: true, delta: 'Live' },
             { label: 'Overdue Invoices', value: stats.overdueInvoices.toString(), sub: 'Needs immediate review', up: stats.overdueInvoices === 0, delta: stats.overdueInvoices === 0 ? 'Clear' : 'Pending' },
             { label: 'Projected Runway', value: stats.projectedRunway, sub: 'Dynamic cash estimate', up: true, delta: 'Forecast' },
           ].map(k => (
-            <div key={k.label} className="bg-white border border-slate-200/70 rounded-2xl p-5 shadow-sm flex flex-col gap-1">
+            <div key={k.label} className="bg-white border border-slate-200/70 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col gap-1">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{k.label}</span>
               <span className="text-2xl font-extrabold text-slate-900 mt-1">{k.value}</span>
               <div className="flex items-center gap-1.5 mt-1">
@@ -336,11 +338,11 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* ── Upload + NL Query (side by side) ─────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Upload zone + NL query — stack on mobile, side-by-side on desktop */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 
-          {/* Upload Zone */}
-          <div className="bg-white border border-slate-200/70 rounded-2xl p-6 shadow-sm flex flex-col gap-4">
+          {/* File upload drop zone */}
+          <div className="bg-white border border-slate-200/70 rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-base font-bold text-slate-900">Upload Invoice</h2>
@@ -392,8 +394,8 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* NL Query */}
-          <div className="bg-white border border-slate-200/70 rounded-2xl p-6 shadow-sm flex flex-col gap-4">
+          {/* Natural language query panel */}
+          <div className="bg-white border border-slate-200/70 rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col gap-4">
             <div>
               <h2 className="text-base font-bold text-slate-900">Ask Your Financials</h2>
               <p className="text-xs text-slate-500 mt-0.5">Query spending, revenue, or vendors in plain English.</p>
@@ -415,7 +417,7 @@ export default function DashboardPage() {
                 </button>
               </div>
 
-              {/* Suggestion chips */}
+              {/* Quick-fill suggestion chips */}
               <div className="flex flex-wrap gap-1.5 mt-1">
                 {[
                   'Who are our top vendors?',
@@ -439,14 +441,14 @@ export default function DashboardPage() {
             )}
             {queryError && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">{queryError}</p>}
             {queryResult && (
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-[11px] text-slate-700 font-mono whitespace-pre-wrap max-h-48 overflow-y-auto flex-1">
-                {queryResult}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 max-h-48 overflow-y-auto flex-1">
+                <MarkdownRenderer content={queryResult} />
               </div>
             )}
           </div>
         </div>
 
-        {/* ── Proactive Insights ────────────────────────────────────────── */}
+        {/* AI-generated insight cards */}
         <div>
           <h2 className="text-base font-bold text-slate-900 mb-3">Proactive Insights</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -463,14 +465,14 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ── Invoice Table ─────────────────────────────────────────────── */}
+        {/* Extracted invoices table — scrolls horizontally on mobile */}
         <div className="bg-white border border-slate-200/70 rounded-2xl shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-100">
             <h2 className="text-base font-bold text-slate-900">Extracted Invoices</h2>
             <span className="text-xs text-slate-400">{invoices.length} records</span>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-xs min-w-[640px]">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100 text-left">
                   {['Invoice ID', 'Vendor', 'Amount', 'Tax', 'PO Number', 'Date', 'Status', 'Actions'].map(h => (
@@ -519,12 +521,12 @@ export default function DashboardPage() {
 
       </main>
 
-      {/* ── Camera Scanner Modal ────────────────────────────────────────── */}
+      {/* Camera scanner modal — full-screen overlay */}
       {showScanner && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 shadow-2xl rounded-3xl w-full max-w-lg overflow-hidden flex flex-col gap-4 p-6 relative">
+          <div className="bg-white border border-slate-200 shadow-2xl rounded-3xl w-full max-w-lg overflow-hidden flex flex-col gap-4 p-4 sm:p-6 relative">
             
-            {/* Header */}
+            {/* Modal header with close button */}
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
@@ -544,7 +546,7 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* Camera View Area */}
+            {/* Live camera preview */}
             <div className="relative rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden aspect-[4/3] flex items-center justify-center">
               {cameraError ? (
                 <div className="p-6 text-center flex flex-col items-center gap-3">
@@ -560,7 +562,7 @@ export default function DashboardPage() {
                     playsInline
                     className="w-full h-full object-cover transform scale-x-[-1]"
                   />
-                  {/* Scanner overlay alignment box */}
+                  {/* Dashed overlay to help user align the document */}
                   <div className="absolute inset-6 border-2 border-dashed border-blue-400/60 rounded-xl pointer-events-none flex items-center justify-center">
                     <div className="absolute inset-0 bg-blue-500/5 animate-pulse rounded-xl" />
                     <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest bg-slate-900/80 px-2.5 py-1 rounded-full backdrop-blur-sm">
@@ -571,7 +573,7 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* Actions */}
+            {/* Cancel / Capture action buttons */}
             <div className="flex items-center gap-3">
               <button
                 onClick={() => { stopCamera(); setShowScanner(false); }}

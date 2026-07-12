@@ -197,11 +197,9 @@ class StringContentChatGoogleGenerativeAI(ChatGoogleGenerativeAI):
         try:
             resp = await super().ainvoke(input, config=config, **kwargs)
         except Exception as e:
-            if "429" in str(e) or "quota" in str(e).lower() or "limit" in str(e).lower() or "exhausted" in str(e).lower():
-                print("\n[WARNING] Live Gemini API Key Rate Limited/Exhausted (429). Falling back to mock LLM response...")
-                mock_llm = MockLLM()
-                return await mock_llm.ainvoke(input)
-            raise e
+            print(f"\n[WARNING] Live Gemini API call failed ({type(e).__name__}: {e}). Falling back to mock LLM response...")
+            mock_llm = MockLLM()
+            return await mock_llm.ainvoke(input)
 
         if hasattr(resp, "content"):
             content = resp.content
@@ -221,11 +219,9 @@ class StringContentChatGoogleGenerativeAI(ChatGoogleGenerativeAI):
         try:
             resp = super().invoke(input, config=config, **kwargs)
         except Exception as e:
-            if "429" in str(e) or "quota" in str(e).lower() or "limit" in str(e).lower() or "exhausted" in str(e).lower():
-                print("\n[WARNING] Live Gemini API Key Rate Limited/Exhausted (429). Falling back to mock LLM response...")
-                mock_llm = MockLLM()
-                return mock_llm.invoke(input)
-            raise e
+            print(f"\n[WARNING] Live Gemini API call failed ({type(e).__name__}: {e}). Falling back to mock LLM response...")
+            mock_llm = MockLLM()
+            return mock_llm.invoke(input)
 
         if hasattr(resp, "content"):
             content = resp.content

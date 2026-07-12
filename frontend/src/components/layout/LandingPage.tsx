@@ -2,10 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../store/AuthContext';
 
-/**
- * Custom hook: observes elements and adds a CSS class when they scroll into view.
- * Returns a ref callback to attach to any element that should animate on scroll.
- */
+// Watches elements with IntersectionObserver and adds 'revealed' class when they enter the viewport
 function useScrollReveal() {
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -257,12 +254,15 @@ export default function LandingPage() {
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [latency, setLatency] = useState<number>(24);
 
-  // Carousel States
+  // Carousel state
   const [activeSlide, setActiveSlide] = useState<number>(0);
   const [carouselIsPlaying, setCarouselIsPlaying] = useState<boolean>(true);
   const [progress, setProgress] = useState<number>(0);
 
-  // Scroll-triggered animation ref callback
+  // Mobile nav toggle
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Scroll-reveal hook
   const reveal = useScrollReveal();
 
   useEffect(() => {
@@ -281,7 +281,7 @@ export default function LandingPage() {
     return () => clearInterval(timer);
   }, [activePreset, isPlaying]);
 
-  // Simulate subtle system metrics updates
+  // Randomly flicker the RTT display to simulate live system activity
   useEffect(() => {
     const metricTimer = setInterval(() => {
       setLatency(Math.floor(20 + Math.random() * 8));
@@ -289,12 +289,12 @@ export default function LandingPage() {
     return () => clearInterval(metricTimer);
   }, []);
 
-  // Carousel Auto-Rotation Progress Loop
+  // Advance carousel slide automatically every 5 seconds
   useEffect(() => {
     if (!carouselIsPlaying) return;
 
-    const intervalTime = 50; // Update every 50ms
-    const totalDuration = 5000; // 5 seconds per slide
+    const intervalTime = 50;
+    const totalDuration = 5000;
     const increment = (intervalTime / totalDuration) * 100;
 
     const timer = setInterval(() => {
@@ -351,74 +351,80 @@ export default function LandingPage() {
       {/* Background Grid Pattern */}
       <div className="absolute inset-0 bg-grid-pattern pointer-events-none opacity-100 z-0"></div>
 
-      {/* Header Nav */}
+      {/* Top nav — sticky with blur backdrop */}
       <header className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-100 z-50 animate-fade-in-down">
-        <div className="max-w-6xl mx-auto px-6 h-18 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <a href="#" className="flex items-center gap-2.5 font-bold text-lg text-slate-900 group">
             <LogoIcon />
             <span>Invoxio</span>
             <span className="text-[10px] bg-slate-100 text-slate-500 font-mono px-2 py-0.5 rounded-md font-normal ml-1">v1.2.0-beta</span>
           </a>
-          
-          {/* Central Nav Links */}
+
+          {/* Desktop nav links */}
           <nav className="hidden md:flex items-center gap-8">
-            <a 
-              href="#" 
-              className="text-xs font-semibold text-slate-500 hover:text-slate-950 transition-colors uppercase tracking-wider"
-            >
-              Platform
-            </a>
-            <button 
+            <a href="#" className="text-xs font-semibold text-slate-500 hover:text-slate-950 transition-colors uppercase tracking-wider">Platform</a>
+            <button
               onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
               className="text-xs font-semibold text-slate-500 hover:text-slate-950 transition-colors uppercase tracking-wider cursor-pointer"
             >
               ReAct Engine
             </button>
-            <a 
-              href="#" 
-              className="text-xs font-semibold text-slate-500 hover:text-slate-950 transition-colors uppercase tracking-wider"
-            >
-              Security
-            </a>
-            <a 
-              href="#" 
-              className="text-xs font-semibold text-slate-500 hover:text-slate-950 transition-colors uppercase tracking-wider"
-            >
-              Enterprise
-            </a>
+            <a href="#" className="text-xs font-semibold text-slate-500 hover:text-slate-950 transition-colors uppercase tracking-wider">Security</a>
+            <a href="#" className="text-xs font-semibold text-slate-500 hover:text-slate-950 transition-colors uppercase tracking-wider">Enterprise</a>
           </nav>
 
-          {/* Action Group */}
-          <div className="flex items-center gap-6">
+          {/* CTA buttons + mobile hamburger */}
+          <div className="flex items-center gap-3 sm:gap-6">
             {isAuthenticated ? (
-              <Link 
-                to="/dashboard"
-                className="bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-semibold text-xs px-5 py-2.5 rounded-full transition-all shadow-sm shadow-slate-950/10 cursor-pointer uppercase tracking-wider text-center"
-              >
-                Go to Dashboard
+              <Link to="/dashboard" className="bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-semibold text-xs px-4 sm:px-5 py-2.5 rounded-full transition-all shadow-sm cursor-pointer uppercase tracking-wider">
+                Dashboard
               </Link>
             ) : (
               <>
-                <Link 
-                  to="/login" 
-                  className="hidden sm:inline-block text-xs font-semibold text-slate-500 hover:text-slate-950 transition-colors uppercase tracking-wider"
-                >
-                  Sign In
-                </Link>
-                <Link 
-                  to="/register"
-                  className="bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-semibold text-xs px-5 py-2.5 rounded-full transition-all shadow-sm shadow-slate-950/10 cursor-pointer uppercase tracking-wider text-center"
-                >
-                  Request Demo
+                <Link to="/login" className="hidden sm:inline-block text-xs font-semibold text-slate-500 hover:text-slate-950 transition-colors uppercase tracking-wider">Sign In</Link>
+                <Link to="/register" className="bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-semibold text-xs px-4 sm:px-5 py-2.5 rounded-full transition-all shadow-sm cursor-pointer uppercase tracking-wider">
+                  Get Started
                 </Link>
               </>
             )}
+            {/* Hamburger — only shown on mobile */}
+            <button
+              className="md:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                {mobileMenuOpen
+                  ? <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </>
+                  : <><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>
+                }
+              </svg>
+            </button>
           </div>
         </div>
+
+        {/* Mobile dropdown menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-slate-100 bg-white px-4 py-4 flex flex-col gap-3">
+            <a href="#" className="text-sm font-semibold text-slate-600 hover:text-slate-900 py-2" onClick={() => setMobileMenuOpen(false)}>Platform</a>
+            <button
+              onClick={() => { document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenuOpen(false); }}
+              className="text-sm font-semibold text-slate-600 hover:text-slate-900 py-2 text-left cursor-pointer"
+            >
+              ReAct Engine
+            </button>
+            <a href="#" className="text-sm font-semibold text-slate-600 hover:text-slate-900 py-2" onClick={() => setMobileMenuOpen(false)}>Security</a>
+            <a href="#" className="text-sm font-semibold text-slate-600 hover:text-slate-900 py-2" onClick={() => setMobileMenuOpen(false)}>Enterprise</a>
+            {!isAuthenticated && (
+              <Link to="/login" className="text-sm font-semibold text-blue-600 py-2" onClick={() => setMobileMenuOpen(false)}>Sign In</Link>
+            )}
+          </div>
+        )}
       </header>
 
-      {/* Hero Section */}
-      <section className="max-w-5xl mx-auto px-6 pt-24 pb-16 text-center relative z-10">
+      {/* Hero */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-16 sm:pt-24 pb-12 sm:pb-16 text-center relative z-10">
         <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.15] mb-6 animate-fade-in-up delay-100">
           Autonomous Financial Operations<br />Powered by Multi-Agent AI.
         </h1>
@@ -550,10 +556,10 @@ export default function LandingPage() {
             })}
           </div>
 
-          {/* Right Side: Mock Browser Frame */}
+          {/* Right side — mock browser showing workflow screenshots */}
           <div className="lg:col-span-7 relative z-10">
-            {/* Prev Float Button */}
-            <button 
+            {/* Prev arrow — hidden on mobile since the browser bar handles it */}
+            <button
               onClick={handlePrev}
               className="absolute left-[-20px] top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white border border-slate-100 shadow-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer hidden md:flex"
               title="Previous workflow"
@@ -563,7 +569,7 @@ export default function LandingPage() {
               </svg>
             </button>
 
-            {/* Next Float Button */}
+            {/* Next arrow */}
             <button 
               onClick={handleNext}
               className="absolute right-[-20px] top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white border border-slate-100 shadow-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer hidden md:flex"
@@ -574,9 +580,9 @@ export default function LandingPage() {
               </svg>
             </button>
 
-            {/* Mock Browser Container */}
+            {/* Browser chrome frame */}
             <div className="relative rounded-2xl border border-slate-200/80 bg-white p-2.5 shadow-2xl transition-all duration-500 w-full overflow-hidden aspect-[16/10]">
-              {/* Header bar */}
+              {/* Fake address bar / traffic lights */}
               <div className="flex items-center justify-between px-3 pb-2.5 border-b border-slate-100 select-none">
                 <div className="flex gap-1.5 items-center">
                   <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
@@ -605,8 +611,7 @@ export default function LandingPage() {
                   </button>
                 </div>
               </div>
-              
-              {/* Viewport showing workflow images with transition */}
+              {/* Slide images with crossfade transition */}
               <div className="relative w-full h-full bg-slate-950 rounded-lg overflow-hidden mt-2.5">
                 {CAROUSEL_SLIDES.map((slide, index) => {
                   const isActive = activeSlide === index;
@@ -629,8 +634,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Social Proof */}
-      {/* eslint-disable-next-line -- scroll reveal section */}
+      {/* Logo marquee strip */}
       <section ref={reveal} className="border-y border-slate-100 bg-white py-10 relative z-10 overflow-hidden scroll-reveal">
         <div className="max-w-5xl mx-auto px-6 mb-6 text-center">
           <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
@@ -638,17 +642,17 @@ export default function LandingPage() {
           </div>
         </div>
         
-        {/* Marquee Wrapper with side fading gradients */}
+        {/* Marquee with left/right fade masks */}
         <div className="relative flex overflow-x-hidden w-full before:absolute before:left-0 before:top-0 before:z-10 before:h-full before:w-24 before:bg-gradient-to-r before:from-white before:to-transparent after:absolute after:right-0 after:top-0 after:z-10 after:h-full after:w-24 after:bg-gradient-to-l after:from-white after:to-transparent">
           <div className="flex gap-20 animate-marquee whitespace-nowrap py-2 select-none">
-            {/* First Set of Logos */}
+            {/* First copy of logos */}
             {LOGOS.map((logo, index) => (
               <div key={`logo-1-${index}`} className="flex items-center gap-2.5 text-slate-400 hover:text-slate-700 transition-colors duration-300 font-bold text-sm tracking-widest uppercase cursor-default">
                 {logo.icon}
                 <span>{logo.name}</span>
               </div>
             ))}
-            {/* Second Set of Logos (Duplicate for seamless loop) */}
+            {/* Duplicate set so the marquee loops seamlessly */}
             {LOGOS.map((logo, index) => (
               <div key={`logo-2-${index}`} className="flex items-center gap-2.5 text-slate-400 hover:text-slate-700 transition-colors duration-300 font-bold text-sm tracking-widest uppercase cursor-default">
                 {logo.icon}
@@ -659,8 +663,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Intelligent Core Capabilities */}
-      <section ref={reveal} className="max-w-4xl mx-auto px-6 py-24 relative z-10 scroll-reveal">
+      {/* Core feature cards */}
+      <section ref={reveal} className="max-w-4xl mx-auto px-4 sm:px-6 py-16 sm:py-24 relative z-10 scroll-reveal">
         <div className="text-center mb-16">
           <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight mb-4">Intelligent Core Capabilities</h2>
         </div>
@@ -747,15 +751,15 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Simulator / ReAct Loop Section */}
-      <section id="demo" className="bg-slate-100/40 border-y border-slate-200/50 py-24 relative z-10">
-        <div ref={reveal} className="max-w-4xl mx-auto px-6 scroll-reveal">
+      {/* Interactive ReAct agent simulator */}
+      <section id="demo" className="bg-slate-100/40 border-y border-slate-200/50 py-16 sm:py-24 relative z-10">
+        <div ref={reveal} className="max-w-4xl mx-auto px-4 sm:px-6 scroll-reveal">
           <div className="text-center mb-16">
             <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight mb-4">The ReAct Loop</h2>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 items-stretch">
-            {/* Steps & Controls */}
+            {/* Step list on the left */}
             <div className="lg:col-span-2 flex flex-col justify-center gap-6">
               <div className="flex flex-col gap-6">
                 <div 
@@ -811,7 +815,7 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Preset Selector buttons */}
+              {/* Scenario picker */}
               <div className="mt-8 border-t border-slate-200/60 pt-6">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-3">Choose a scenario:</span>
                 <div className="flex flex-wrap gap-2">
@@ -832,8 +836,8 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Terminal Panel */}
-            <div className="lg:col-span-3 bg-[#0d1117] border border-slate-900 rounded-2xl flex flex-col h-[400px] shadow-xl overflow-hidden relative">
+            {/* Fake terminal showing agent reasoning steps */}
+            <div className="lg:col-span-3 bg-[#0d1117] border border-slate-900 rounded-2xl flex flex-col h-[380px] sm:h-[400px] shadow-xl overflow-hidden relative">
               <div className="h-10 bg-[#161b22] border-b border-slate-900/50 flex items-center justify-between px-4 select-none">
                 <div className="flex gap-1.5">
                   <div 
@@ -886,9 +890,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA Box */}
-      <section ref={reveal} className="max-w-4xl mx-auto px-6 py-20 relative z-10 scroll-reveal-scale">
-        <div className="bg-gradient-to-r from-slate-900 to-slate-950 rounded-3xl p-12 text-center text-white shadow-xl shadow-slate-950/10 relative overflow-hidden border border-slate-800">
+      {/* Bottom CTA */}
+      <section ref={reveal} className="max-w-4xl mx-auto px-4 sm:px-6 py-14 sm:py-20 relative z-10 scroll-reveal-scale">
+        <div className="bg-gradient-to-r from-slate-900 to-slate-950 rounded-3xl p-8 sm:p-12 text-center text-white shadow-xl shadow-slate-950/10 relative overflow-hidden border border-slate-800">
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none animate-glow-pulse"></div>
           <h2 className="text-2xl md:text-3xl font-extrabold mb-4 tracking-tight">Ready to orchestrate your financial operations?</h2>
           <p className="text-slate-400 max-w-xl mx-auto mb-8 text-sm md:text-base leading-relaxed">
@@ -904,11 +908,10 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer ref={reveal} className="border-t border-slate-100 bg-white py-16 relative z-10 scroll-reveal">
-        <div className="max-w-5xl mx-auto px-6">
+      <footer ref={reveal} className="border-t border-slate-100 bg-white py-12 sm:py-16 relative z-10 scroll-reveal">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-10 mb-16">
-            
-            {/* Column 1: Brand & Status */}
+            {/* Brand column */}
             <div className="md:col-span-4 flex flex-col gap-4">
               <a href="#" className="flex items-center gap-2.5 font-bold text-slate-900 text-lg group">
                 <LogoIcon />
@@ -924,7 +927,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Column 2: Platform */}
+            {/* Platform links */}
             <div className="md:col-span-2 flex flex-col gap-4">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Platform</span>
               <ul className="flex flex-col gap-2.5 text-xs font-semibold text-slate-500">
@@ -936,7 +939,7 @@ export default function LandingPage() {
               </ul>
             </div>
 
-            {/* Column 3: Trust & Safety */}
+            {/* Legal / trust links */}
             <div className="md:col-span-2 flex flex-col gap-4">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Trust & Legal</span>
               <ul className="flex flex-col gap-2.5 text-xs font-semibold text-slate-500">
@@ -948,7 +951,7 @@ export default function LandingPage() {
               </ul>
             </div>
 
-            {/* Column 4: Newsletter Sign-up */}
+            {/* Newsletter signup */}
             <div className="md:col-span-4 flex flex-col gap-4">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Enterprise Updates</span>
               <p className="text-slate-500 text-xs leading-relaxed">
@@ -968,14 +971,12 @@ export default function LandingPage() {
 
           </div>
 
-          {/* Bottom Footer Section */}
+          {/* Copyright + social links */}
           <div className="border-t border-slate-100 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-[11px] text-slate-400">
             <div className="flex flex-col gap-1 text-center sm:text-left">
               <span>© {new Date().getFullYear()} Invoxio AI, Inc. All rights reserved.</span>
               <span className="opacity-75">Enterprise Cloud hosted in AWS us-east-1 (SOC-2 compliant data center).</span>
             </div>
-            
-            {/* Social Icons */}
             <div className="flex gap-4">
               <a href="#" className="text-slate-400 hover:text-slate-600 transition-colors" aria-label="LinkedIn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

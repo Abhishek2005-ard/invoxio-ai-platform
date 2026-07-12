@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('invoxio_token'));
   const [loading, setLoading] = useState(true);
 
-  // Hydrate user from token on mount
+  // On mount, re-validate the stored JWT and hydrate the user state
   useEffect(() => {
     const hydrate = async () => {
       if (!token) {

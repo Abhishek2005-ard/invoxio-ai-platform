@@ -12,14 +12,15 @@
   }
 }
 
-/* Custom Grid Overlay & Glow Effects for Light Theme */
+/* Subtle dot-grid background texture */
 .bg-grid-pattern {
-  background-image: 
+  background-image:
     linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
+/* Slow scale pulse for ambient glows */
 @keyframes pulse-slow {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.05); opacity: 0.8; }
@@ -29,7 +30,7 @@
   animation: pulse-slow 2s infinite ease-in-out;
 }
 
-/* Rotation animations for circular widget */
+/* Slow rotation for circular decorative widgets */
 @keyframes spin-slow {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -39,7 +40,7 @@
   animation: spin-slow 20s linear infinite;
 }
 
-/* Infinite Marquee Animation */
+/* Horizontal marquee for the logo strip */
 @keyframes marquee {
   0% { transform: translateX(0%); }
   100% { transform: translateX(-50%); }
@@ -55,9 +56,7 @@
   animation-play-state: paused;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   Entrance Animations (fire on page load for above-fold elements)
-   ═══════════════════════════════════════════════════════════════ */
+/* Page-load entrance animations */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -100,7 +99,7 @@
   animation: fadeIn 1s ease-out forwards;
 }
 
-/* Stagger Delays */
+/* Animation delay helpers */
 .delay-100 { animation-delay: 100ms; }
 .delay-200 { animation-delay: 200ms; }
 .delay-300 { animation-delay: 300ms; }
@@ -108,11 +107,7 @@
 .delay-500 { animation-delay: 500ms; }
 .delay-700 { animation-delay: 700ms; }
 
-/* ═══════════════════════════════════════════════════════════════
-   Scroll-Reveal Animation System (Intersection Observer driven)
-   ═══════════════════════════════════════════════════════════════ */
-
-/* Base: elements start hidden and translated */
+/* Scroll-reveal system — driven by IntersectionObserver in useScrollReveal */
 .scroll-reveal {
   opacity: 0;
   transform: translateY(32px);
@@ -141,7 +136,7 @@
               transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Revealed state: applied by IntersectionObserver via useScrollReveal */
+/* Applied by IntersectionObserver once element enters viewport */
 .scroll-reveal.revealed,
 .scroll-reveal-left.revealed,
 .scroll-reveal-right.revealed,
@@ -150,17 +145,14 @@
   transform: translateY(0) translateX(0) scale(1);
 }
 
-/* Stagger delays for scroll-reveal children */
+/* Stagger delays for child items inside scroll-reveal containers */
 .sr-delay-1 { transition-delay: 80ms; }
 .sr-delay-2 { transition-delay: 160ms; }
 .sr-delay-3 { transition-delay: 240ms; }
 .sr-delay-4 { transition-delay: 320ms; }
 .sr-delay-5 { transition-delay: 400ms; }
 
-/* ═══════════════════════════════════════════════════════════════
-   Continuous Micro-Animations (always alive, subtle motion)
-   ═══════════════════════════════════════════════════════════════ */
-
+/* Floating bob animation */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-6px); }
@@ -174,6 +166,7 @@
   animation: float 6s ease-in-out infinite;
 }
 
+/* Shimmer sweep for loading states */
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
@@ -185,6 +178,7 @@
   animation: shimmer 3s ease-in-out infinite;
 }
 
+/* Slow gradient color shift */
 @keyframes gradient-shift {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -195,6 +189,7 @@
   animation: gradient-shift 6s ease-in-out infinite;
 }
 
+/* Soft opacity pulse for background glows */
 @keyframes glow-pulse {
   0%, 100% { opacity: 0.15; transform: scale(1); }
   50% { opacity: 0.25; transform: scale(1.05); }
@@ -202,4 +197,13 @@
 
 .animate-glow-pulse {
   animation: glow-pulse 4s ease-in-out infinite;
+}
+
+/* Mobile responsive overrides */
+@media (max-width: 640px) {
+  .animate-fade-in-up,
+  .animate-fade-in-down,
+  .animate-fade-in {
+    animation-duration: 0.5s;
+  }
 }

@@ -1,4 +1,4 @@
-/* Modern, Premium Dark Mode CSS for Invoxio Landing Page */
+/* Global design tokens */
 
 :root {
   --bg-dark: #07070a;
@@ -9,14 +9,14 @@
   --text-primary: #f3f4f6;
   --text-secondary: #9ca3af;
   --text-muted: #6b7280;
-  
+
   --accent-purple: #a855f7;
   --accent-purple-glow: rgba(168, 85, 247, 0.15);
   --accent-cyan: #06b6d4;
   --accent-cyan-glow: rgba(6, 182, 212, 0.15);
   --accent-emerald: #10b981;
   --accent-emerald-glow: rgba(16, 185, 129, 0.15);
-  
+
   --sans-font: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
   --mono-font: 'Fira Code', 'Courier New', monospace;
 }
@@ -34,14 +34,14 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-primary) !important;
 }
 
-/* Background Gradients */
+/* Fixed full-screen grid texture */
 .grid-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-image: 
+  background-image:
     linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
   background-size: 40px 40px;
@@ -49,6 +49,7 @@ h1, h2, h3, h4, h5, h6 {
   z-index: 0;
 }
 
+/* Ambient glow blobs */
 .gradient-glow-1 {
   position: absolute;
   top: -10%;
@@ -71,7 +72,7 @@ h1, h2, h3, h4, h5, h6 {
   z-index: 0;
 }
 
-/* Container */
+/* Page-wide centered wrapper */
 .container {
   max-width: 1200px;
   margin: 0 auto;
@@ -80,7 +81,7 @@ h1, h2, h3, h4, h5, h6 {
   z-index: 10;
 }
 
-/* Header & Nav */
+/* Sticky translucent nav */
 .header {
   position: sticky;
   top: 0;
@@ -141,7 +142,7 @@ h1, h2, h3, h4, h5, h6 {
   gap: 16px;
 }
 
-/* Buttons */
+/* Shared button base */
 .btn {
   padding: 10px 20px;
   border-radius: 8px;
@@ -184,7 +185,7 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--bg-card-hover);
 }
 
-/* Hero Section */
+/* Hero */
 .hero-section {
   padding: 100px 0 60px;
   text-align: center;
@@ -235,9 +236,10 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   justify-content: center;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
-/* Social Proof */
+/* Social proof strip */
 .social-proof {
   padding: 40px 0;
   text-align: center;
@@ -259,6 +261,7 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   gap: 80px;
   opacity: 0.5;
+  flex-wrap: wrap;
 }
 
 .logo-item {
@@ -268,7 +271,7 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.5px;
 }
 
-/* Feature Grid (Bento Box) */
+/* Feature bento grid */
 .features-section {
   padding: 100px 0;
 }
@@ -360,7 +363,7 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.5;
 }
 
-/* Bento Custom Previews */
+/* Inline OCR preview block inside bento card */
 .ocr-preview {
   margin-top: 24px;
   background: rgba(0, 0, 0, 0.3);
@@ -408,7 +411,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
 }
 
-/* Interactive Simulator Section */
+/* Interactive simulator panel */
 .simulator-section {
   padding: 80px 0;
   background: radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.03) 0%, transparent 60%);
@@ -551,7 +554,7 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 12px;
 }
 
-/* CTA Card */
+/* CTA section */
 .cta-section {
   padding: 80px 0;
 }
@@ -605,6 +608,7 @@ h1, h2, h3, h4, h5, h6 {
 .footer-links {
   display: flex;
   gap: 24px;
+  flex-wrap: wrap;
 }
 
 .footer-link {
@@ -617,7 +621,7 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-primary);
 }
 
-/* Keyframe Animations */
+/* Keyframes */
 @keyframes pulse {
   0% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.4); }
   70% { transform: scale(1.1); opacity: 0.8; box-shadow: 0 0 0 8px rgba(168, 85, 247, 0); }
@@ -628,13 +632,36 @@ h1, h2, h3, h4, h5, h6 {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Responsive */
+/* Tablet breakpoint */
+@media (max-width: 1024px) {
+  .bento-grid { grid-template-columns: repeat(2, 1fr); }
+  .col-span-2 { grid-column: span 2; }
+  .simulator-container { grid-template-columns: 1fr; }
+  .hero-title { font-size: 52px; }
+}
+
+/* Mobile breakpoint */
 @media (max-width: 768px) {
   .nav-links { display: none; }
   .bento-grid { grid-template-columns: 1fr; }
   .col-span-2 { grid-column: span 1; }
-  .simulator-container { grid-template-columns: 1fr; }
-  .hero-title { font-size: 40px; }
-  .cta-card { padding: 40px 20px; }
-  .footer-container { flex-direction: column; gap: 20px; }
+  .simulator-container { grid-template-columns: 1fr; padding: 24px; }
+  .hero-title { font-size: 36px; letter-spacing: -1px; }
+  .hero-subtitle { font-size: 16px; }
+  .hero-section { padding: 60px 0 40px; }
+  .cta-card { padding: 32px 20px; }
+  .cta-title { font-size: 28px; }
+  .footer-container { flex-direction: column; gap: 20px; text-align: center; }
+  .footer-copy { flex-direction: column; gap: 8px; }
+  .features-section { padding: 60px 0; }
+  .section-title { font-size: 28px; }
+  .social-logos { gap: 32px; }
+  .container { padding: 0 16px; }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  .hero-title { font-size: 28px; }
+  .btn { padding: 10px 16px; font-size: 13px; }
+  .bento-card { padding: 20px; }
 }

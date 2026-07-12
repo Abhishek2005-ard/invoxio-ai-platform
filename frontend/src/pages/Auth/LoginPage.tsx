@@ -34,10 +34,10 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row relative overflow-hidden font-sans">
-      {/* Ambient Grid overlay */}
+      {/* Subtle dot-grid background */}
       <div className="absolute inset-0 bg-grid-pattern pointer-events-none opacity-40 z-0"></div>
 
-      {/* Left Panel: Brand info (Visible on MD+) */}
+      {/* Left branding panel — hidden on small screens */}
       <div className="hidden md:flex md:w-1/2 bg-slate-950 text-white p-12 flex-col justify-between relative z-10 overflow-hidden border-r border-slate-900">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,#1e3a8a,transparent_60%)] opacity-35 z-0 animate-pulse-slow"></div>
         <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none"></div>
@@ -94,7 +94,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right Panel: Form */}
+      {/* Right side: login form */}
       <div className="flex-1 flex items-center justify-center p-8 md:p-12 relative z-10">
         <div className="w-full max-w-sm bg-white border border-slate-200/60 rounded-3xl p-8 shadow-xl shadow-slate-200/50 flex flex-col gap-6 animate-fade-in-up">
           <div className="text-center md:text-left">
