@@ -538,6 +538,6 @@ def root():
 
 
 if __name__ == "__main__":
-    port = int(os.getenv("APP_PORT", 8000))
+    port = int(os.getenv("PORT", os.getenv("APP_PORT", 8000)))
     print(f"Starting Invoxio on http://0.0.0.0:{port}")
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)

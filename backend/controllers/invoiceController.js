@@ -71,7 +71,8 @@ const processInvoice = async (req, res) => {
   await invoice.save();
 
   try {
-    const agentUrl = `${process.env.AGENT_SERVICE_URL || 'http://localhost:8000'}/api/pipeline/process`;
+    const agentBaseUrl = (process.env.AGENT_SERVICE_URL || 'http://localhost:8000').replace(/\/$/, '');
+    const agentUrl = `${agentBaseUrl}/api/pipeline/process`;
     
     // 2. Call the Python Agent via Fetch
     const response = await fetch(agentUrl, {
@@ -161,7 +162,8 @@ const approveInvoice = async (req, res) => {
       });
     }
 
-    const agentUrl = `${process.env.AGENT_SERVICE_URL || 'http://localhost:8000'}/api/pipeline/approve`;
+    const agentBaseUrl = (process.env.AGENT_SERVICE_URL || 'http://localhost:8000').replace(/\/$/, '');
+    const agentUrl = `${agentBaseUrl}/api/pipeline/approve`;
 
     // 2. Call the Python Agent approval endpoint
     const response = await fetch(agentUrl, {
