@@ -16,7 +16,7 @@ function useScrollReveal() {
           }
         });
       },
-      { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
+      { threshold: 0.05, rootMargin: '0px 0px 0px 0px' }
     );
 
     return () => observerRef.current?.disconnect();
@@ -890,8 +890,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Bottom CTA */}
-      <section ref={reveal} className="max-w-4xl mx-auto px-4 sm:px-6 py-14 sm:py-20 relative z-10 scroll-reveal-scale">
+      {/* Bottom CTA — no scroll-reveal here; it sits at the very bottom and can miss the observer on mobile */}
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 py-14 sm:py-20 relative z-10">
         <div className="bg-gradient-to-r from-slate-900 to-slate-950 rounded-3xl p-8 sm:p-12 text-center text-white shadow-xl shadow-slate-950/10 relative overflow-hidden border border-slate-800">
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none animate-glow-pulse"></div>
           <h2 className="text-2xl md:text-3xl font-extrabold mb-4 tracking-tight">Ready to orchestrate your financial operations?</h2>
@@ -907,10 +907,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer ref={reveal} className="border-t border-slate-100 bg-white py-12 sm:py-16 relative z-10 scroll-reveal">
+      {/* Footer — always visible, no scroll animation */}
+      <footer className="border-t border-slate-100 bg-white py-12 sm:py-16 relative z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-10 mb-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-6 sm:gap-8 md:gap-10 mb-10 sm:mb-16">
             {/* Brand column */}
             <div className="md:col-span-4 flex flex-col gap-4">
               <a href="#" className="flex items-center gap-2.5 font-bold text-slate-900 text-lg group">
